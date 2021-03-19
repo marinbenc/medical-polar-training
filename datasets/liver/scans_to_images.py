@@ -24,17 +24,36 @@ subfolders = ['train', 'test', 'valid']
 
 for folder in subfolders:
   all_files = h.listdir(p.join(scans_directory, folder))
+  all_files = np.array(all_files)
   all_files.sort()
+
+  file_len = len(all_files) // 2
+  all_files = np.dstack((all_files[file_len:], all_files[:file_len])).squeeze()
 
   h.mkdir(folder)
 
-  for scan_file in all_files:
-    scan = read_scan(p.join(scans_directory, folder, scan_file))
-    for i in range(scan.shape[-1]):
-      current_slice = scan[..., i]
-      original_name = scan_file.split('.')[0]
-      file_name = f'{original_name}-{i}.npy'
-      save_path = p.join(folder, file_name)
-      np.save(save_path, current_slice)
+  for scan_files in all_files:
+    volume_file, mask_file = scan_files[0], scan_files[1]
+    
+    volume_scan = read_scan(p.join(scans_directory, folder, volume_file))
+    mask_scan = read_scan(p.join(scans_directory, folder, mask_file))
 
+    for i in range(mask_scan.shape[-1]):
+      mask_slice = mask_scan[..., i]
+      if mask_slice.sum() <= 0:
+        # skip non-liver slices
+        continue
+
+      volume_slice = volume_scan[..., i]
+      original_volume_name = volume_file.split('.')[0]
+      original_mask_name = mask_file.split('.')[0]
+
+      volume_name = f'{original_volume_name}-{i}.npy'
+      mask_name = f'{original_mask_name}-{i}.npy'
+
+      volume_save_path = p.join(folder, volume_name)
+      mask_save_path = p.join(folder, mask_name)
+
+      np.save(volume_save_path, volume_slice)
+      np.save(mask_save_path, mask_slice)
 

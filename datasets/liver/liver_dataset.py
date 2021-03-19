@@ -3,8 +3,8 @@ import os.path as p
 
 import torch
 from torch.utils.data import Dataset
-import nibabel as nib
 import numpy as np
+import cv2 as cv
 
 sys.path.append('..')
 import helpers as h
@@ -18,19 +18,21 @@ GOLBAL_PIXEL_MEAN = 0.1
 
 class LiverDataset(Dataset):
 
-  def read_scan(self, file_path):
-    scan = np.rot90(nib.load(file_path).get_fdata())
-    return scan
+  in_channels = 1
+  out_channels = 1
 
-  def __init__(self, directory):
+  def __init__(self, directory, polar=True):
+    self.directory = directory
+    self.polar = polar
+
     all_files = h.listdir(directory)
     all_files = np.array(all_files)
     all_files.sort()
 
-    self.directory = directory
     self.data = np.dstack((all_files[len(all_files) // 2:], all_files[:len(all_files) // 2])).squeeze()
     
   def __len__(self):
+    # return 32 # overfit single batch
     return len(self.data)
 
   def __getitem__(self, idx):
@@ -38,6 +40,9 @@ class LiverDataset(Dataset):
     volume, mask = current_data[0], current_data[1]
     volume_slice = np.load(p.join(self.directory, volume))
     mask_slice = np.load(p.join(self.directory, mask))
+
+    volume_slice = cv.resize(volume_slice, dsize=(128, 128), interpolation=cv.INTER_CUBIC)
+    mask_slice = cv.resize(mask_slice, dsize=(128, 128), interpolation=cv.INTER_CUBIC)
 
     # remove non-liver labels
     mask_slice[mask_slice > 1] = 1
@@ -51,9 +56,10 @@ class LiverDataset(Dataset):
     volume_slice -= GOLBAL_PIXEL_MEAN
 
     # convert to polar
-    center = polar_transformations.centroid(mask_slice)
-    volume_slice = polar_transformations.to_polar(volume_slice, center)
-    mask_slice = polar_transformations.to_polar(mask_slice, center)
+    if self.polar:
+      center = polar_transformations.centroid(mask_slice)
+      volume_slice = polar_transformations.to_polar(volume_slice, center)
+      mask_slice = polar_transformations.to_polar(mask_slice, center)
 
     # convert to Pytorch expected format
     volume_slice = np.expand_dims(volume_slice, axis=-1)

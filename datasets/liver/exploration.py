@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
 
-from dataset import LiverDataset
+from liver_dataset import LiverDataset
 
 dataset = LiverDataset('valid')
 for (volume, mask) in dataset:

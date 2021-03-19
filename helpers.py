@@ -5,6 +5,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pydicom
 
+def dsc(y_pred, y_true):
+
+  y_pred[y_pred > 0.5] = 1
+  y_pred[y_pred <= 0.5] = 0
+
+  y_true[y_true > 0.5] = 1
+  y_true[y_true <= 0.5] = 0
+
+  if not np.any(y_true):
+    return 1 - np.sum(y_pred) * 2.0 / np.sum(1 - y_true)
+  else:
+    return np.sum(y_pred[y_true == 1]) * 2.0 / (np.sum(y_pred) + np.sum(y_true))
+
 def listdir(path):
   """ List files but remove hidden files from list """
   return [item for item in os.listdir(path) if item[0] != '.']
