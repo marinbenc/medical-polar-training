@@ -21,9 +21,10 @@ class LiverDataset(Dataset):
   in_channels = 1
   out_channels = 1
 
-  def __init__(self, directory, polar=True):
+  def __init__(self, directory, polar=True, manual_centers=None):
     self.directory = p.join('datasets/liver', directory)
     self.polar = polar
+    self.manual_centers = manual_centers
 
     all_files = h.listdir(self.directory)
     all_files = np.array(all_files)
@@ -57,7 +58,10 @@ class LiverDataset(Dataset):
 
     # convert to polar
     if self.polar:
-      center = polar_transformations.centroid(mask_slice)
+      if self.manual_centers is not None:
+        center = self.manual_centers[idx]
+      else:
+        center = polar_transformations.centroid(mask_slice)
       volume_slice = polar_transformations.to_polar(volume_slice, center)
       mask_slice = polar_transformations.to_polar(mask_slice, center)
 

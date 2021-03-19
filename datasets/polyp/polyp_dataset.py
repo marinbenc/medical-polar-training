@@ -16,9 +16,10 @@ class PolypDataset(Dataset):
   in_channels = 3
   out_channels = 1
 
-  def __init__(self, directory, polar=True):
+  def __init__(self, directory, polar=True, manual_centers=None):
     self.directory = p.join('datasets/polyp', directory)
     self.polar = polar
+    self.manual_centers = manual_centers
 
     self.file_names = h.listdir(p.join(self.directory, 'label'))
     
@@ -44,7 +45,10 @@ class PolypDataset(Dataset):
 
     # convert to polar
     if self.polar:
-      center = polar_transformations.centroid(label)
+      if self.manual_centers is not None:
+        center = self.manual_centers[idx]
+      else:
+        center = polar_transformations.centroid(label)
       input = polar_transformations.to_polar(input, center)
       label = polar_transformations.to_polar(label, center)
 
