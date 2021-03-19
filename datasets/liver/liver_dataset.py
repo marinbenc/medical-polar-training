@@ -22,10 +22,10 @@ class LiverDataset(Dataset):
   out_channels = 1
 
   def __init__(self, directory, polar=True):
-    self.directory = directory
+    self.directory = p.join('datasets/liver', directory)
     self.polar = polar
 
-    all_files = h.listdir(directory)
+    all_files = h.listdir(self.directory)
     all_files = np.array(all_files)
     all_files.sort()
 

@@ -8,8 +8,12 @@ import torch
 
 sys.path.append('models')
 from unet_plain import UNet
+
 sys.path.append('datasets/liver')
 from liver_dataset import LiverDataset
+sys.path.append('datasets/polyp')
+from polyp_dataset import PolypDataset
+
 from helpers import dsc
 
 import polar_transformations
@@ -46,9 +50,18 @@ def get_predictions(model, dataset, device):
 
 def main(args):
   device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
-  dataset = LiverDataset(p.join(args.images, 'test'), polar=args.polar)
 
-  model = UNet(in_channels=LiverDataset.in_channels, out_channels=LiverDataset.out_channels, device=device)
+  if args.dataset == 'liver':
+    dataset_class = LiverDataset
+  elif args.dataset == 'polyp':
+    dataset_class = PolypDataset
+    
+  dataset = dataset_class('test', polar=args.polar)
+
+  model = UNet(
+    in_channels=dataset_class.in_channels, 
+    out_channels=dataset_class.out_channels, 
+    device=device)
   model.to(device)
   model.load_state_dict(torch.load(args.weights))
   model.eval()
@@ -67,7 +80,7 @@ if __name__ == '__main__':
     '--weights', type=str, help='path to weights'
   )
   parser.add_argument(
-    '--images', type=str, default='datasets/liver/', help='root folder with images'
+    '--dataset', type=str, choices=['liver', 'polyp'], default='liver', help='dataset type'
   )
   parser.add_argument(
       '--polar', 

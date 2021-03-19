@@ -36,19 +36,33 @@ from loss import DiceLoss
 
 sys.path.append('models')
 from unet_plain import UNet
+
 sys.path.append('datasets/liver')
 from liver_dataset import LiverDataset
+sys.path.append('datasets/polyp')
+from polyp_dataset import PolypDataset
+
 from helpers import dsc
 from dice_metric import DiceMetric
+
+dataset_choices = ['liver', 'polyp']
 
 def main(args):
     makedirs(args)
     snapshotargs(args)
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
 
-    loader_train, loader_valid = data_loaders(args)
+    if args.dataset == 'liver':
+        dataset_class = LiverDataset
+    elif args.dataset == 'polyp':
+        dataset_class = PolypDataset
 
-    model = UNet(in_channels=LiverDataset.in_channels, out_channels=LiverDataset.out_channels, device=device)
+    loader_train, loader_valid = data_loaders(args, dataset_class)
+
+    model = UNet(
+        in_channels=dataset_class.in_channels, 
+        out_channels=dataset_class.out_channels, 
+        device=device)
     model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -72,10 +86,14 @@ def main(args):
     @trainer.on(Events.GET_BATCH_COMPLETED(once=1))
     def plot_batch(engine):
         x, y = engine.state.batch
-        plt.imshow(x[0].squeeze())
-        plt.show()
-        plt.imshow(y[0].squeeze())
-        plt.show()
+        images = [x[0], y[0]]
+        for image in images:
+            if image.shape[0] > 1:
+                image = image.numpy()
+                image = image.transpose(1, 2, 0)
+                image += 0.5
+            plt.imshow(image.squeeze())
+            plt.show()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def compute_metrics(engine):
@@ -128,8 +146,8 @@ def main(args):
 
     print(f'Mean CV DSC: {mean_dsc:.4f}')
 
-def data_loaders(args):
-    dataset_train, dataset_valid = datasets(args)
+def data_loaders(args, dataset_class):
+    dataset_train, dataset_valid = datasets(args, dataset_class)
 
     def worker_init(worker_id):
         np.random.seed(42 + worker_id)
@@ -152,13 +170,13 @@ def data_loaders(args):
 
     return loader_train, loader_valid
 
-def datasets(args):
-    train = LiverDataset(
-      directory=os.path.join(args.images, 'train'),
+def datasets(args, dataset_class):
+    train = dataset_class(
+      directory='train',
       polar=args.polar
     )
-    valid = LiverDataset(
-      directory=os.path.join(args.images, 'valid'),
+    valid = dataset_class(
+      directory='valid',
       polar=args.polar
     )
     return train, valid
@@ -197,7 +215,7 @@ if __name__ == '__main__':
         '--logs', type=str, default='./logs', help='folder to save logs'
     )
     parser.add_argument(
-        '--images', type=str, default='datasets/liver/', help='root folder with images'
+        '--dataset', type=str, choices=dataset_choices, default='liver', help='which dataset to use'
     )
     parser.add_argument(
         '--workers',
