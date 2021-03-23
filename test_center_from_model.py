@@ -13,24 +13,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-sys.path.append('models')
-from unet_plain import UNet
-
 sys.path.append('datasets/liver')
 from liver_dataset import LiverDataset
 sys.path.append('datasets/polyp')
 from polyp_dataset import PolypDataset
 
-from helpers import dsc
-
+import train
+from helpers import dsc, iou, precision, recall
 import polar_transformations
 from test import get_predictions
 
 def get_model(weights, dataset_class, device):
-  model = UNet(
-    in_channels=dataset_class.in_channels, 
-    out_channels=dataset_class.out_channels, 
-    device=device)
+  model = train.get_model(args, dataset_class, device)
   model.to(device)
   model.load_state_dict(torch.load(weights))
   model.eval()
@@ -56,8 +50,12 @@ def main(args):
   polar_model = get_model(args.polar_weights, dataset_class, device)
   _, all_ys, all_predicted_ys = get_predictions(polar_model, polar_dataset, device)
 
-  dscs = np.array([dsc(all_ys[i], all_predicted_ys[i]) for i in range(len(all_ys))])
-  print(f'Mean DSC: {dscs.mean()}')
+  dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+
+  print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
@@ -70,7 +68,10 @@ if __name__ == '__main__':
     '--polar_weights', type=str, help='path to weights of polar model'
   )
   parser.add_argument(
-    '--dataset', type=str, choices=['liver', 'polyp'], default='liver', help='dataset type'
+    '--model', type=str, choices=train.model_choices, default='liver', help='dataset type'
+  )
+  parser.add_argument(
+    '--dataset', type=str, choices=train.dataset_choices, default='liver', help='dataset type'
   )
 
   args = parser.parse_args()

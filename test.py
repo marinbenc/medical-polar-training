@@ -6,16 +6,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-sys.path.append('models')
-from unet_plain import UNet
-
 sys.path.append('datasets/liver')
 from liver_dataset import LiverDataset
 sys.path.append('datasets/polyp')
 from polyp_dataset import PolypDataset
 
-from helpers import dsc
-
+import train
+from train import get_model
+from helpers import dsc, iou, precision, recall
 import polar_transformations
 
 def get_predictions(model, dataset, device):
@@ -58,10 +56,7 @@ def main(args):
     
   dataset = dataset_class('test', polar=args.polar)
 
-  model = UNet(
-    in_channels=dataset_class.in_channels, 
-    out_channels=dataset_class.out_channels, 
-    device=device)
+  model = get_model(args, dataset_class, device)
   model.to(device)
   model.load_state_dict(torch.load(args.weights))
   model.eval()
@@ -69,8 +64,12 @@ def main(args):
 
   _, all_ys, all_predicted_ys = get_predictions(model, dataset, device)
 
-  dscs = np.array([dsc(all_ys[i], all_predicted_ys[i]) for i in range(len(all_ys))])
-  print(f'Mean DSC: {dscs.mean()}')
+  dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+
+  print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
@@ -80,7 +79,10 @@ if __name__ == '__main__':
     '--weights', type=str, help='path to weights'
   )
   parser.add_argument(
-    '--dataset', type=str, choices=['liver', 'polyp'], default='liver', help='dataset type'
+    '--model', type=str, choices=train.model_choices, default='liver', help='dataset type'
+  )
+  parser.add_argument(
+    '--dataset', type=str, choices=train.dataset_choices, default='liver', help='dataset type'
   )
   parser.add_argument(
       '--polar', 

@@ -33,7 +33,7 @@ class LiverDataset(Dataset):
     self.data = np.dstack((all_files[len(all_files) // 2:], all_files[:len(all_files) // 2])).squeeze()
     
   def __len__(self):
-    # return 32 # overfit single batch
+    # return 16 # overfit single batch
     return len(self.data)
 
   def __getitem__(self, idx):
@@ -54,6 +54,8 @@ class LiverDataset(Dataset):
     
     # normalize and zero-center
     volume_slice = (volume_slice - WINDOW_MIN) / (WINDOW_MAX - WINDOW_MIN)
+    # zero-centered globally because CT machines are calibrated to have even 
+    # intensities across images
     volume_slice -= GOLBAL_PIXEL_MEAN
 
     # convert to polar

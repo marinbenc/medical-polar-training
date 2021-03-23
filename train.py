@@ -46,6 +46,7 @@ from helpers import dsc
 from dice_metric import DiceMetric
 
 dataset_choices = ['liver', 'polyp']
+model_choices = ['unet', 'resunetpp', 'deeplab']
 
 def main(args):
     makedirs(args)
@@ -59,15 +60,12 @@ def main(args):
 
     loader_train, loader_valid = data_loaders(args, dataset_class)
 
-    model = UNet(
-        in_channels=dataset_class.in_channels, 
-        out_channels=dataset_class.out_channels, 
-        device=device)
+    model = get_model(args, dataset_class, device)
     model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    criterion = DiceLoss()
+    criterion = smp.utils.losses.DiceLoss()
 
     metrics = {
       'dsc': DiceMetric(device=device),
@@ -146,6 +144,25 @@ def main(args):
 
     print(f'Mean CV DSC: {mean_dsc:.4f}')
 
+def get_model(args, dataset_class, device):
+    if args.model == 'unet':
+        model = UNet(
+            in_channels=dataset_class.in_channels, 
+            out_channels=dataset_class.out_channels, 
+            device=device)
+    elif args.model == 'resunetpp':
+        model = smp.UnetPlusPlus(
+            in_channels=dataset_class.in_channels,
+            classes=dataset_class.out_channels,
+            encoder_weights=None,
+            activation='sigmoid')
+    elif args.model == 'deeplab':
+        model = smp.DeepLabV3Plus(
+            in_channels=dataset_class.in_channels,
+            classes=dataset_class.out_channels,
+            activation='sigmoid')
+    return model
+
 def data_loaders(args, dataset_class):
     dataset_train, dataset_valid = datasets(args, dataset_class)
 
@@ -213,6 +230,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--logs', type=str, default='./logs', help='folder to save logs'
+    )
+    parser.add_argument(
+        '--model', type=str, choices=model_choices, default='unet', help='which model architecture to use'
     )
     parser.add_argument(
         '--dataset', type=str, choices=dataset_choices, default='liver', help='which dataset to use'

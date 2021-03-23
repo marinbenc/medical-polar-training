@@ -24,7 +24,7 @@ class PolypDataset(Dataset):
     self.file_names = h.listdir(p.join(self.directory, 'label'))
     
   def __len__(self):
-    # return 32 # overfit single batch
+    #return 16 # overfit single batch
     return len(self.file_names)
 
   def __getitem__(self, idx):
