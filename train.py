@@ -32,7 +32,7 @@ from ignite.metrics import Accuracy, Loss, ConfusionMatrix, DiceCoefficient, Mea
 from ignite.contrib.metrics.regression import MedianAbsolutePercentageError
 
 import helpers as h
-from loss import DiceLoss
+from loss import DiceLoss, CenterPointLoss
 
 sys.path.append('models')
 from unet_plain import UNet
@@ -65,10 +65,11 @@ def main(args):
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    criterion = smp.utils.losses.DiceLoss()
+    criterion = CenterPointLoss()
 
     metrics = {
       'dsc': DiceMetric(device=device),
+      'loss': Loss(criterion)
     }
 
     trainer = create_supervised_trainer(model, optimizer, criterion, device=device)
@@ -107,7 +108,7 @@ def main(args):
 
     tb_logger.attach_output_handler(
         trainer,
-        event_name=Events.ITERATION_COMPLETED(every=100),
+        event_name=Events.EPOCH_COMPLETED,
         tag='training',
         output_transform=lambda loss: {'batchloss': loss},
         metric_names='all',
