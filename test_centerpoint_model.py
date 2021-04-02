@@ -18,13 +18,15 @@ from liver_dataset import LiverDataset
 sys.path.append('datasets/polyp')
 from polyp_dataset import PolypDataset
 
-sys.path.append('models')
-from centerpoint_model import centerpoint_model
+import train_hourglass
+from heatmap_dataset import HeatmapDataset
 
 import train
 from helpers import dsc, iou, precision, recall
 import polar_transformations
 from test import get_predictions
+
+from helpers import show_images_row
 
 def get_centerpoint_predictions(model, dataset, device):
   all_ys = []
@@ -36,28 +38,25 @@ def get_centerpoint_predictions(model, dataset, device):
       prediction = model(x.unsqueeze(0).detach())
 
       predicted_y = prediction
-      predicted_y = tuple(predicted_y.squeeze().detach().cpu().numpy())
+      predicted_y = predicted_y.squeeze().detach().cpu().numpy()[-1]
 
       all_predicted_ys.append(predicted_y)
 
-      y = tuple(y.squeeze().detach().cpu().numpy())
+      y = y.squeeze().detach().cpu().numpy()
       all_ys.append(y)
-
-
-      print(y, predicted_y)
 
       # fig, (ax1, ax2) = plt.subplots(1,2, figsize = (12, 6))
       # ax1.imshow(y)
       # ax1.set_title('GT')
-      # ax2.imshow(predicted_y.squeeze())
+      # ax2.imshow(predicted_y[-1].squeeze())
       # ax2.set_title('Predicted')
       # plt.show()
 
-
+  show_images_row(all_ys[:8] + all_predicted_ys[:8], titles=["GT" for _ in range(8)] + ["pred" for _ in range(8)], rows=2)
   return all_ys, all_predicted_ys
 
-def get_centerpoint_model(weights, device):
-  model = centerpoint_model()
+def get_centerpoint_model(weights, dataset_class, device):
+  model = train_hourglass.get_model(args, dataset_class, device)
   model.to(device)
   model.load_state_dict(torch.load(weights))
   model.eval()
@@ -82,21 +81,22 @@ def main(args):
     dataset_class = PolypDataset
     
   # find centroids
-  centers_dataset = dataset_class('test', polar=False, centers=True)
-  centers_model = get_centerpoint_model(args.non_polar_weights, device)
+  centers_dataset = HeatmapDataset(dataset_class('test', polar=False))
+  centers_model = get_centerpoint_model(args.non_polar_weights, dataset_class, device)
   _, centers = get_centerpoint_predictions(centers_model, centers_dataset, device)
+  print(centers[0].shape)
 
   # run final predictions
-  polar_dataset = dataset_class('test', polar=True, manual_centers=centers)
-  polar_model = get_model(args.polar_weights, dataset_class, device)
-  _, all_ys, all_predicted_ys = get_predictions(polar_model, polar_dataset, device)
+  # polar_dataset = dataset_class('test', polar=True, manual_centers=centers)
+  # polar_model = get_model(args.polar_weights, dataset_class, device)
+  # _, all_ys, all_predicted_ys = get_predictions(polar_model, polar_dataset, device)
 
-  dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
-  ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
-  precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
-  recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  # dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  # ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  # precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  # recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
 
-  print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
+  # print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
@@ -105,12 +105,12 @@ if __name__ == '__main__':
   parser.add_argument(
     '--non_polar_weights', type=str, help='path to weights of non-polar model'
   )
-  parser.add_argument(
-    '--polar_weights', type=str, help='path to weights of polar model'
-  )
-  parser.add_argument(
-    '--model', type=str, choices=train.model_choices, default='liver', help='dataset type'
-  )
+  # parser.add_argument(
+  #   '--polar_weights', type=str, help='path to weights of polar model'
+  # )
+  # parser.add_argument(
+  #   '--model', type=str, choices=train.model_choices, default='liver', help='dataset type'
+  # )
   parser.add_argument(
     '--dataset', type=str, choices=train.dataset_choices, default='liver', help='dataset type'
   )

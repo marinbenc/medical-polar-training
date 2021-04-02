@@ -1,28 +1,32 @@
 import os
 
 import sys
-sys.path.append('../..')
-import helpers as h
-
-import polar_transformations
+sys.path.append('../../..')
 
 import matplotlib.pyplot as plt
 import numpy as np
-import nibabel as nib
+from scipy import ndimage
+from matplotlib.patches import Rectangle
 
+sys.path.append('datasets/polyp')
 from polyp_dataset import PolypDataset
+from heatmap_dataset import HeatmapDataset
 
-dataset = PolypDataset('valid')
-for image in dataset:
-  continue
-  #print(image)
-    # fig, (ax1, ax2) = plt.subplots(1,2, figsize = (12, 6))
-    # ax1.imshow(volume.squeeze())
-    # ax1.set_title('Image')
-    # ax2.imshow(mask.squeeze())
-    # ax2.set_title('Mask')
-    # plt.show()
+dataset = HeatmapDataset(PolypDataset('valid', polar=False))
 
+for (volume, mask) in dataset:
+  volume = np.array(volume)
+  volume = volume.transpose(1, 2, 0) + 0.5
+  mask = np.array(mask).squeeze()
+
+  fig, (ax1, ax2) = plt.subplots(1,2, figsize = (12, 6))
+  ax1.imshow(volume)
+  ax1.set_title('Image')
+
+  ax2.imshow(mask)
+  ax2.set_title('Mask')
+
+  plt.show()
 
 
 # volume_path = 'train/volume-4.nii'

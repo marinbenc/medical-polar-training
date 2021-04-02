@@ -45,5 +45,3 @@ class CenterPointLoss(nn.Module):
 
         return dsc + mse
 
-
-

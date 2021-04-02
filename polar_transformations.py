@@ -4,7 +4,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
 
-def centroid(img):
+def centroid(img, lcc=False):
+  if lcc:
+    img = img.astype(np.uint8)
+    nb_components, output, stats, centroids = cv.connectedComponentsWithStats(img, connectivity=4)
+    sizes = stats[:, -1]
+    if len(sizes) > 2:
+      max_label = 1
+      max_size = sizes[1]
+
+      for i in range(2, nb_components):
+          if sizes[i] > max_size:
+              max_label = i
+              max_size = sizes[i]
+
+      img2 = np.zeros(output.shape)
+      img2[output == max_label] = 255
+      img = img2
+
   if len(img.shape) > 2:
     M = cv.moments(img[:,:,1])
   else:
