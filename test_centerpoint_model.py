@@ -12,6 +12,7 @@ import os.path as p
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import cv2 as cv
 
 sys.path.append('datasets/liver')
 from liver_dataset import LiverDataset
@@ -45,14 +46,17 @@ def get_centerpoint_predictions(model, dataset, device):
       y = y.squeeze().detach().cpu().numpy()
       all_ys.append(y)
 
-      # fig, (ax1, ax2) = plt.subplots(1,2, figsize = (12, 6))
-      # ax1.imshow(y)
-      # ax1.set_title('GT')
-      # ax2.imshow(predicted_y[-1].squeeze())
-      # ax2.set_title('Predicted')
-      # plt.show()
+      fig, (ax1, ax2) = plt.subplots(1,2, figsize = (12, 6))
+      ax1.imshow(y)
+      ax1.set_title('GT')
+      ax2.imshow(predicted_y.squeeze())
+      c = cv.minMaxLoc(predicted_y)[-1]
+      print(c)
+      ax2.scatter(c[0], c[1], c='r')
+      ax2.set_title('Predicted')
+      plt.show()
 
-  show_images_row(all_ys[:8] + all_predicted_ys[:8], titles=["GT" for _ in range(8)] + ["pred" for _ in range(8)], rows=2)
+  # show_images_row(all_ys[:8] + all_predicted_ys[:8], titles=["GT" for _ in range(8)] + ["pred" for _ in range(8)], rows=2)
   return all_ys, all_predicted_ys
 
 def get_centerpoint_model(weights, dataset_class, device):
@@ -84,19 +88,19 @@ def main(args):
   centers_dataset = HeatmapDataset(dataset_class('test', polar=False))
   centers_model = get_centerpoint_model(args.non_polar_weights, dataset_class, device)
   _, centers = get_centerpoint_predictions(centers_model, centers_dataset, device)
-  print(centers[0].shape)
+  centers = [cv.minMaxLoc(center)[-1] polar_transformations.centroid(center) for center in centers]
 
   # run final predictions
-  # polar_dataset = dataset_class('test', polar=True, manual_centers=centers)
-  # polar_model = get_model(args.polar_weights, dataset_class, device)
-  # _, all_ys, all_predicted_ys = get_predictions(polar_model, polar_dataset, device)
+  polar_dataset = dataset_class('test', polar=True, manual_centers=centers)
+  polar_model = get_model(args.polar_weights, dataset_class, device)
+  _, all_ys, all_predicted_ys = get_predictions(polar_model, polar_dataset, device)
 
-  # dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
-  # ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
-  # precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
-  # recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
 
-  # print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
+  print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
@@ -105,12 +109,12 @@ if __name__ == '__main__':
   parser.add_argument(
     '--non_polar_weights', type=str, help='path to weights of non-polar model'
   )
-  # parser.add_argument(
-  #   '--polar_weights', type=str, help='path to weights of polar model'
-  # )
-  # parser.add_argument(
-  #   '--model', type=str, choices=train.model_choices, default='liver', help='dataset type'
-  # )
+  parser.add_argument(
+    '--polar_weights', type=str, help='path to weights of polar model'
+  )
+  parser.add_argument(
+    '--model', type=str, choices=train.model_choices, default='liver', help='dataset type'
+  )
   parser.add_argument(
     '--dataset', type=str, choices=train.dataset_choices, default='liver', help='dataset type'
   )
