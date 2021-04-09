@@ -6,19 +6,30 @@ import torchvision
 from torch.utils.data import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
-import torch.nn.functional as F
+
+import albumentations.augmentations.functional as F
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 import polar_transformations
 
 # based on https://github.com/princeton-vl/pytorch_stacked_hourglass/blob/master/data/MPII/dp.py
 class HeatmapDataset(Dataset):
-  def __init__(self, wrapped_dataset, manual_centers=None):
+  def __init__(self, wrapped_dataset, manual_centers=None, transform=None):
     self.manual_centers = manual_centers
     self.wrapped_dataset = wrapped_dataset
 
+    if transform is not None:
+      self.transform = A.Compose([
+        transform,
+        ToTensorV2()
+      ])
+    else:
+      self.transform = ToTensorV2()
+
   @staticmethod
   def _generate_heatmap(output_res, center):
-    sigma = max(output_res) / 32
+    sigma = max(output_res) / 8
     size = 6 * sigma + 3
     x = np.arange(0, size, 1, float)
     y = x[:, np.newaxis]
@@ -50,17 +61,22 @@ class HeatmapDataset(Dataset):
   def __getitem__(self, idx):
     (input, label) = self.wrapped_dataset.__getitem__(idx)
 
-    input = torchvision.transforms.functional.resize(input, (256, 256))
-    label = torchvision.transforms.functional.resize(label, (256, 256))
+    input = input.detach().numpy().transpose(1, 2, 0)
+    input = F.resize(input, 256, 256)
+    label = label.detach().numpy().squeeze()
+    label = F.resize(label, 256, 256)
 
     if self.manual_centers is not None:
       center = self.manual_centers[idx]
     else:
-      label = label.detach().numpy().squeeze()
       center = polar_transformations.centroid(label)
 
     label = HeatmapDataset._generate_heatmap(label.shape[-2:], center)
-    label = torch.from_numpy(label).unsqueeze(0)
-    label = torchvision.transforms.functional.resize(label, (64, 64))
+    label = A.resize(label, 64, 64)
+
+    transformed = self.transform(image=input, mask=label)
+    input, label = transformed['image'], transformed['mask']
+    label = label.unsqueeze(0)
+
     return input, label
 

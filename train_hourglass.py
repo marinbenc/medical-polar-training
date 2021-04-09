@@ -31,6 +31,8 @@ from ignite.engine import Events, create_supervised_trainer, create_supervised_e
 from ignite.metrics import Accuracy, Loss, ConfusionMatrix, DiceCoefficient, MeanSquaredError
 from ignite.contrib.metrics.regression import MedianAbsolutePercentageError
 
+import albumentations as A
+
 import helpers as h
 from loss import DiceLoss, CenterPointLoss
 
@@ -138,7 +140,7 @@ def main(args):
     tb_logger.close()
 
 def get_model(args, dataset_class, device):
-    return StackedHourglass(nstack=8, inp_dim=256, oup_dim=1)
+    return StackedHourglass(nstack=args.nstacks, inp_dim=256, oup_dim=1)
 
 def data_loaders(args, dataset_class):
     dataset_train, dataset_valid = datasets(args, dataset_class)
@@ -165,10 +167,16 @@ def data_loaders(args, dataset_class):
     return loader_train, loader_valid
 
 def datasets(args, dataset_class):
-    train = HeatmapDataset(dataset_class(
-      directory='train',
-      polar=args.polar
-    ))
+    train = HeatmapDataset(
+        wrapped_dataset=dataset_class(
+            directory='train',
+            polar=args.polar,
+        ), 
+        transform=A.Compose([
+            A.HorizontalFlip(p=0.5),
+            A.ShiftScaleRotate(p=0.3),
+            A.GridDistortion(p=0.3),
+        ]))
     valid = HeatmapDataset(dataset_class(
       directory='valid',
       polar=args.polar
@@ -219,6 +227,12 @@ if __name__ == '__main__':
         type=int,
         default=4,
         help='number of workers for data loading (default: 4)',
+    )
+    parser.add_argument(
+        '--nstacks',
+        type=int,
+        default=8,
+        help='number of hourglass stacks',
     )
     parser.add_argument(
       '--polar', 
