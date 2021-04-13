@@ -1,3 +1,16 @@
+'''
+Based on Stacked Hourglass Networks for Human Pose Estimation. 
+Alejandro Newell, Kaiyu Yang, and Jia Deng. 
+European Conference on Computer Vision (ECCV), 2016. Github
+
+Adopted from PyTorch code by Chris Rockwell; 
+based on: Associative Embedding: End-to-end Learning for Joint Detection and Grouping. 
+Alejandro Newell, Zhiao Huang, and Jia Deng. 
+Neural Information Processing Systems (NeurIPS), 2017. Github
+
+source: https://github.com/princeton-vl/pytorch_stacked_hourglass/
+'''
+
 import torch
 from torch import nn
 from layers import Conv, Hourglass, Pool, Residual
@@ -31,12 +44,12 @@ class Merge(nn.Module):
         return self.conv(x)
     
 class StackedHourglass(nn.Module):
-    def __init__(self, nstack, inp_dim, oup_dim, bn=False, increase=0, **kwargs):
+    def __init__(self, nstack, inp_dim, oup_dim, in_channels=3, bn=False, increase=0, **kwargs):
         super(StackedHourglass, self).__init__()
         
         self.nstack = nstack
         self.pre = nn.Sequential(
-            Conv(3, 64, 7, 2, bn=True, relu=True),
+            Conv(in_channels, 64, 7, 2, bn=True, relu=True),
             Residual(64, 128),
             Pool(2, 2),
             Residual(128, 128),
@@ -62,7 +75,6 @@ class StackedHourglass(nn.Module):
 
     def forward(self, imgs):
         ## our posenet
-        #x = imgs.permute(0, 3, 1, 2) #x of size 1,3,inpdim,inpdim
         x = self.pre(imgs)
         combined_hm_preds = []
         for i in range(self.nstack):

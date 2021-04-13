@@ -51,6 +51,7 @@ def get_centerpoint_predictions(model, dataset, device):
   return all_ys, all_predicted_ys
 
 def get_centerpoint_model(weights, dataset_class, device):
+  print(dataset_class)
   model = train_hourglass.get_model(args, dataset_class, device)
   model.to(device)
   model.load_state_dict(torch.load(weights))
@@ -75,56 +76,11 @@ def main(args):
   elif args.dataset == 'polyp':
     dataset_class = PolypDataset
 
-  # find centroids with regular model
-  # old_centers_dataset = dataset_class('test', polar=False)
-  # old_centers_model = get_model(args.polar_weights, dataset_class, device)
-  # old_centers_gt, old_centers_pred = get_centerpoint_predictions(old_centers_model, old_centers_dataset, device)
-  # old_centers = [polar_transformations.centroid(center) for center in old_centers_pred]
-    
   # find centroids
   centers_dataset = HeatmapDataset(dataset_class('test', polar=False))
   centers_model = get_centerpoint_model(args.non_polar_weights, dataset_class, device)
   centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
-  centers = [cv.minMaxLoc(cv.resize(center[-1], (384,288)))[-1] for center in centers_pred]
-
-  # old_mapes = []
-  # old_misses = 0
-  # new_mapes = []
-  # new_misses = 0
-  # for i in range(len(centers)):
-  #   gt_center = np.array(polar_transformations.centroid(old_centers_gt[i]))
-  #   old_center = np.array(old_centers[i])
-  #   new_center = np.array(centers[i])
-
-  #   old_mape = np.mean(np.abs(gt_center - old_center) / np.mean(old_centers_gt[i].shape[-2:]))
-  #   old_mapes.append(old_mape)
-  #   new_mape = np.mean(np.abs(gt_center - new_center) / np.mean(old_centers_gt[i].shape[-2:]))
-  #   new_mapes.append(new_mape)
-
-  #   if old_centers_gt[i][(new_center[1], new_center[0])].max() < 0.5:
-  #     new_misses += 1
-
-  #   if old_centers_gt[i][(old_center[1], old_center[0])].max() < 0.5:
-  #     old_misses += 1
-
-  # print(np.mean(old_mapes), old_misses)
-  # print(np.mean(new_mapes), new_misses)
-
-  # sorting = np.argsort(-np.array(new_mapes))
-  # old_centers_gt = np.array(old_centers_gt)[sorting]
-  # old_centers = np.array(old_centers)[sorting]
-  # centers = np.array(centers)[sorting]
-
-  # for i in range(16):
-  #   gt_center = np.array(polar_transformations.centroid(old_centers_gt[i]))
-  #   current_y = old_centers_gt[i] * 255
-  #   image = np.dstack((current_y, current_y, current_y))
-  #   image = cv.circle(image, tuple(old_centers[i]), radius=5, color=(255,0,0), thickness=-1)
-  #   image = cv.circle(image, tuple(centers[i]), radius=5, color=(0,255,0), thickness=-1)
-  #   image = cv.circle(image, tuple(gt_center), radius=5, color=(0,0,255), thickness=-1)
-
-  #   plt.imshow(image)
-  #   plt.show()
+  centers = [cv.minMaxLoc(cv.resize(center[-1], (128,128)))[-1] for center in centers_pred]
 
   # run final predictions
   polar_dataset = dataset_class('test', polar=True, manual_centers=centers)
@@ -136,11 +92,11 @@ def main(args):
   precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
 
-  sorting = np.argsort(dscs)
-  sorted_final = np.array(all_ys)[sorting]
-  sorted_ys = np.array(centers_gt)[sorting]
-  sorted_non_polar_predictions = np.array(centers_pred)[sorting]
-  sorted_centers = np.array(centers)[sorting]
+  # sorting = np.argsort(dscs)
+  # sorted_final = np.array(all_ys)[sorting]
+  # sorted_ys = np.array(centers_gt)[sorting]
+  # sorted_non_polar_predictions = np.array(centers_pred)[sorting]
+  # sorted_centers = np.array(centers)[sorting]
 
   # for i in range(len(sorting)):
   #   plt.imshow(sorted_final[i])
@@ -155,7 +111,7 @@ if __name__ == '__main__':
     description='Testing'
   )
   parser.add_argument(
-    '--non_polar_weights', type=str, help='path to weights of non-polar model'
+    '--centerpoint_weights', type=str, help='path to weights of centerpoint model'
   )
   parser.add_argument(
     '--polar_weights', type=str, help='path to weights of polar model'

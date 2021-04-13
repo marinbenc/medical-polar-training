@@ -88,25 +88,3 @@ def show_images_row(imgs, titles=None, rows=1, figsize=(6.4, 4.8), **kwargs):
       ax.set_title(title)
       plt.axis('off')
   plt.show()
-
-def preprocess_dcm_image(image):
-  MIN_BOUND = -200
-  MAX_BOUND = -30
-  GLOBAL_MEAN = 0.0616 # determined by averageing all thresholded and normalized dicom images
-
-  # threshold
-  image[image > MAX_BOUND] = 0
-  image[image < MIN_BOUND] = 0
-
-  # normalize
-  image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
-  image[image>1] = 1.
-  image[image<0] = 0.
-
-  # invert
-  image = 1 - image
-
-  # zero center
-  image -= GLOBAL_MEAN
-
-  return image

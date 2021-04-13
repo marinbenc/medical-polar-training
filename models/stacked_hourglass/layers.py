@@ -1,4 +1,15 @@
-# source: https://github.com/princeton-vl/pytorch_stacked_hourglass/blob/master/models/layers.py
+'''
+Based on Stacked Hourglass Networks for Human Pose Estimation. 
+Alejandro Newell, Kaiyu Yang, and Jia Deng. 
+European Conference on Computer Vision (ECCV), 2016. Github
+
+Adopted from PyTorch code by Chris Rockwell; 
+based on: Associative Embedding: End-to-end Learning for Joint Detection and Grouping. 
+Alejandro Newell, Zhiao Huang, and Jia Deng. 
+Neural Information Processing Systems (NeurIPS), 2017. Github
+
+source: https://github.com/princeton-vl/pytorch_stacked_hourglass/
+'''
 
 from torch import nn
 

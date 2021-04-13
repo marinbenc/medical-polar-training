@@ -55,18 +55,6 @@ def main(args):
   precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
 
-  sorting = np.argsort(dscs)
-  sorted_ys = np.array(non_polar_ys)[sorting]
-  sorted_non_polar_predictions = np.array(non_polar_predictions)[sorting]
-
-  for i in range(5):
-    fig, (ax1, ax2) = plt.subplots(1,2, figsize = (12, 6))
-    ax1.imshow(sorted_ys[i])
-    ax1.set_title('Image')
-
-    ax2.imshow(sorted_non_polar_predictions[i])
-    ax2.set_title('Mask')
-    plt.show()
 
   print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
 

@@ -32,7 +32,9 @@ from ignite.metrics import Accuracy, Loss, ConfusionMatrix, DiceCoefficient, Mea
 from ignite.contrib.metrics.regression import MedianAbsolutePercentageError
 
 import helpers as h
-from loss import DiceLoss, CenterPointLoss
+from loss import DiceLoss
+from helpers import dsc
+from dice_metric import DiceMetric
 
 sys.path.append('models')
 from unet_plain import UNet
@@ -42,8 +44,6 @@ from liver_dataset import LiverDataset
 sys.path.append('datasets/polyp')
 from polyp_dataset import PolypDataset
 
-from helpers import dsc
-from dice_metric import DiceMetric
 
 dataset_choices = ['liver', 'polyp']
 model_choices = ['unet', 'resunetpp', 'deeplab']
@@ -53,11 +53,6 @@ def main(args):
     snapshotargs(args)
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
 
-    if args.dataset == 'liver':
-        dataset_class = LiverDataset
-    elif args.dataset == 'polyp':
-        dataset_class = PolypDataset
-
     loader_train, loader_valid = data_loaders(args, dataset_class)
 
     model = get_model(args, dataset_class, device)
@@ -65,7 +60,7 @@ def main(args):
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    criterion = CenterPointLoss()
+    criterion = DiceLoss()
 
     metrics = {
       'dsc': DiceMetric(device=device),
@@ -141,9 +136,12 @@ def main(args):
     trainer.run(loader_train, max_epochs=args.epochs)
     tb_logger.close()
 
-    return best_dsc
-
-    print(f'Mean CV DSC: {mean_dsc:.4f}')
+def get_dataset_class(args):
+    if args.dataset == 'liver':
+        dataset_class = LiverDataset
+    elif args.dataset == 'polyp':
+        dataset_class = PolypDataset
+    return dataset_class
 
 def get_model(args, dataset_class, device):
     if args.model == 'unet':

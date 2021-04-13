@@ -40,34 +40,23 @@ sys.path.append('models/stacked_hourglass')
 from stacked_hourglass import StackedHourglass, HeatmapLoss
 from heatmap_dataset import HeatmapDataset
 
-sys.path.append('datasets/liver')
-from liver_dataset import LiverDataset
-sys.path.append('datasets/polyp')
-from polyp_dataset import PolypDataset
-
 from helpers import dsc
 from dice_metric import DiceMetric
 
-dataset_choices = ['liver', 'polyp']
-model_choices = ['unet', 'resunetpp', 'deeplab']
+from train import dataset_choices, makedirs, snapshotargs, get_dataset_class, data_loaders
 
 def main(args):
     makedirs(args)
     snapshotargs(args)
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
 
-    if args.dataset == 'liver':
-        dataset_class = LiverDataset
-    elif args.dataset == 'polyp':
-        dataset_class = PolypDataset
-
+    dataset_class = get_dataset_class(args)
     loader_train, loader_valid = data_loaders(args, dataset_class)
 
     model = get_model(args, dataset_class, device)
     model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-
     criterion = HeatmapLoss()
 
     metrics = {
@@ -81,19 +70,6 @@ def main(args):
     train_evaluator.logger = setup_logger('Train Evaluator')
     validation_evaluator = create_supervised_evaluator(model, metrics=metrics, device=device)
     validation_evaluator.logger = setup_logger('Val Evaluator')
-
-    @trainer.on(Events.GET_BATCH_COMPLETED(once=1))
-    def plot_batch(engine):
-        pass
-        # x, y = engine.state.batch
-        # images = [x[0], y[0]]
-        # for image in images:
-        #     if image.shape[0] > 1:
-        #         image = image.numpy()
-        #         image = image.transpose(1, 2, 0)
-        #         image += 0.5
-        #     plt.imshow(image.squeeze())
-        #     plt.show()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def compute_metrics(engine):
@@ -140,37 +116,12 @@ def main(args):
     tb_logger.close()
 
 def get_model(args, dataset_class, device):
-    return StackedHourglass(nstack=args.nstacks, inp_dim=256, oup_dim=1)
-
-def data_loaders(args, dataset_class):
-    dataset_train, dataset_valid = datasets(args, dataset_class)
-
-    def worker_init(worker_id):
-        np.random.seed(42 + worker_id)
-
-    loader_train = DataLoader(
-        dataset_train,
-        batch_size=args.batch_size,
-        shuffle=True,
-        drop_last=True,
-        num_workers=args.workers,
-        worker_init_fn=worker_init,
-    )
-    loader_valid = DataLoader(
-        dataset_valid,
-        batch_size=args.batch_size,
-        drop_last=False,
-        num_workers=args.workers,
-        worker_init_fn=worker_init,
-    )
-
-    return loader_train, loader_valid
+    return StackedHourglass(nstack=args.nstacks, inp_dim=256, oup_dim=1, in_channels=dataset_class.in_channels)
 
 def datasets(args, dataset_class):
     train = HeatmapDataset(
         wrapped_dataset=dataset_class(
             directory='train',
-            polar=args.polar,
         ), 
         transform=A.Compose([
             A.HorizontalFlip(p=0.5),
@@ -179,17 +130,8 @@ def datasets(args, dataset_class):
         ]))
     valid = HeatmapDataset(dataset_class(
       directory='valid',
-      polar=args.polar
     ))
     return train, valid
-
-def makedirs(args):
-    os.makedirs(args.logs, exist_ok=True)
-
-def snapshotargs(args):
-    args_file = os.path.join(args.logs, 'args.json')
-    with open(args_file, 'w') as fp:
-        json.dump(vars(args), fp)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -217,9 +159,6 @@ if __name__ == '__main__':
         '--logs', type=str, default='./logs', help='folder to save logs'
     )
     parser.add_argument(
-        '--model', type=str, choices=model_choices, default='unet', help='which model architecture to use'
-    )
-    parser.add_argument(
         '--dataset', type=str, choices=dataset_choices, default='liver', help='which dataset to use'
     )
     parser.add_argument(
@@ -234,9 +173,5 @@ if __name__ == '__main__':
         default=8,
         help='number of hourglass stacks',
     )
-    parser.add_argument(
-      '--polar', 
-      action='store_true',
-      help='use polar coordinates')
     args = parser.parse_args()
     main(args)

@@ -22,26 +22,3 @@ class DiceLoss(nn.Module):
           )
 
         return 1. - torch.mean(dscs)
-
-class CenterPointLoss(nn.Module):
-
-    def __init__(self):
-        super(CenterPointLoss, self).__init__()
-        self.dice_loss = DiceLoss()
-        self.smooth = 1.0
-
-    def forward(self, y_pred, y_true):
-        assert y_pred.size() == y_true.size()
-        
-        y_centers = torch.zeros((y_pred.shape[0], 2), dtype=torch.float)
-        y_pred_centers = torch.zeros((y_pred.shape[0], 2), dtype=torch.float)
-
-        for i in range(y_pred.shape[0]):
-            y_centers[i] = torch.Tensor(centroid(y_true[i].detach().cpu().numpy().squeeze()))
-            y_pred_centers[i] = torch.Tensor(centroid(y_pred[i].detach().cpu().numpy().squeeze()))
-
-        mse = mse_loss(y_pred_centers, y_centers)
-        dsc = self.dice_loss(y_pred, y_true)
-
-        return dsc + mse
-

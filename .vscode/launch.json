@@ -5,20 +5,20 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Train YOLO",
-      "type": "python",
-      "request": "launch",
-      "program": "${workspaceFolder}/train_yolo.py",
-      "console": "integratedTerminal",
-      "args": ["--dataset", "polyp", "--lr", "0.001", "--batch-size", "2", "--epochs", "200"]
-    },
-    {
-      "name": "Train Hourglass",
+      "name": "Train Hourglass Polyp",
       "type": "python",
       "request": "launch",
       "program": "${workspaceFolder}/train_hourglass.py",
       "console": "integratedTerminal",
-      "args": ["--dataset", "polyp", "--lr", "0.001", "--batch-size", "8", "--epochs", "200"]
+      "args": ["--dataset", "polyp", "--lr", "0.001", "--batch-size", "8", "--epochs", "200", "--nstacks", "8"]
+    },
+    {
+      "name": "Train Hourglass Liver",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/train_hourglass.py",
+      "console": "integratedTerminal",
+      "args": ["--dataset", "liver", "--lr", "0.001", "--batch-size", "8", "--epochs", "200", "--nstacks", "8"]
     }
   ]
 }
