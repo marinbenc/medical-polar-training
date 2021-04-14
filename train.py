@@ -43,9 +43,11 @@ sys.path.append('datasets/liver')
 from liver_dataset import LiverDataset
 sys.path.append('datasets/polyp')
 from polyp_dataset import PolypDataset
+sys.path.append('datasets/lesion')
+from lesion_dataset import LesionDataset
 
 
-dataset_choices = ['liver', 'polyp']
+dataset_choices = ['liver', 'polyp', 'lesion']
 model_choices = ['unet', 'resunetpp', 'deeplab']
 
 def main(args):
@@ -53,6 +55,7 @@ def main(args):
     snapshotargs(args)
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
 
+    dataset_class = get_dataset_class(args)
     loader_train, loader_valid = data_loaders(args, dataset_class)
 
     model = get_model(args, dataset_class, device)
@@ -137,11 +140,12 @@ def main(args):
     tb_logger.close()
 
 def get_dataset_class(args):
-    if args.dataset == 'liver':
-        dataset_class = LiverDataset
-    elif args.dataset == 'polyp':
-        dataset_class = PolypDataset
-    return dataset_class
+    mapping = {
+        'liver':    LiverDataset,
+        'polyp':    PolypDataset,
+        'lesion':   LesionDataset
+    }
+    return mapping[args.dataset]
 
 def get_model(args, dataset_class, device):
     if args.model == 'unet':

@@ -48,12 +48,8 @@ def get_predictions(model, dataset, device):
 
 def main(args):
   device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
-
-  if args.dataset == 'liver':
-    dataset_class = LiverDataset
-  elif args.dataset == 'polyp':
-    dataset_class = PolypDataset
-    
+  
+  dataset_class = train.get_dataset_class(args)
   dataset = dataset_class('test', polar=args.polar)
 
   model = get_model(args, dataset_class, device)

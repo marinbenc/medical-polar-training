@@ -33,11 +33,7 @@ def get_model(weights, dataset_class, device):
 
 def main(args):
   device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
-
-  if args.dataset == 'liver':
-    dataset_class = LiverDataset
-  elif args.dataset == 'polyp':
-    dataset_class = PolypDataset
+  dataset_class = train.get_dataset_class(args)
     
   # find centroids
   non_polar_dataset = dataset_class('test', polar=False)

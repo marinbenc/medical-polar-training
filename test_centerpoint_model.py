@@ -46,7 +46,6 @@ def get_centerpoint_predictions(model, dataset, device):
       y = y.squeeze().detach().cpu().numpy()
       all_ys.append(y)
 
-
   # show_images_row(all_ys[:8] + all_predicted_ys[:8], titles=["GT" for _ in range(8)] + ["pred" for _ in range(8)], rows=2)
   return all_ys, all_predicted_ys
 
@@ -78,7 +77,7 @@ def main(args):
 
   # find centroids
   centers_dataset = HeatmapDataset(dataset_class('test', polar=False))
-  centers_model = get_centerpoint_model(args.non_polar_weights, dataset_class, device)
+  centers_model = get_centerpoint_model(args.centerpoint_weights, dataset_class, device)
   centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
   centers = [cv.minMaxLoc(cv.resize(center[-1], (128,128)))[-1] for center in centers_pred]
 

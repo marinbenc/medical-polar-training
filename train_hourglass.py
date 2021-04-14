@@ -34,7 +34,6 @@ from ignite.contrib.metrics.regression import MedianAbsolutePercentageError
 import albumentations as A
 
 import helpers as h
-from loss import DiceLoss, CenterPointLoss
 
 sys.path.append('models/stacked_hourglass')
 from stacked_hourglass import StackedHourglass, HeatmapLoss
@@ -43,9 +42,11 @@ from heatmap_dataset import HeatmapDataset
 from helpers import dsc
 from dice_metric import DiceMetric
 
-from train import dataset_choices, makedirs, snapshotargs, get_dataset_class, data_loaders
+from train import dataset_choices, makedirs, snapshotargs, get_dataset_class
 
 def main(args):
+    args.polar = False
+
     makedirs(args)
     snapshotargs(args)
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
@@ -117,6 +118,30 @@ def main(args):
 
 def get_model(args, dataset_class, device):
     return StackedHourglass(nstack=args.nstacks, inp_dim=256, oup_dim=1, in_channels=dataset_class.in_channels)
+
+def data_loaders(args, dataset_class):
+    dataset_train, dataset_valid = datasets(args, dataset_class)
+
+    def worker_init(worker_id):
+        np.random.seed(42 + worker_id)
+
+    loader_train = DataLoader(
+        dataset_train,
+        batch_size=args.batch_size,
+        shuffle=True,
+        drop_last=True,
+        num_workers=args.workers,
+        worker_init_fn=worker_init,
+    )
+    loader_valid = DataLoader(
+        dataset_valid,
+        batch_size=args.batch_size,
+        drop_last=False,
+        num_workers=args.workers,
+        worker_init_fn=worker_init,
+    )
+
+    return loader_train, loader_valid
 
 def datasets(args, dataset_class):
     train = HeatmapDataset(
