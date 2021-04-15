@@ -46,7 +46,7 @@ def get_centerpoint_predictions(model, dataset, device):
       y = y.squeeze().detach().cpu().numpy()
       all_ys.append(y)
 
-  # show_images_row(all_ys[:8] + all_predicted_ys[:8], titles=["GT" for _ in range(8)] + ["pred" for _ in range(8)], rows=2)
+  #show_images_row(all_ys[:8] + all_predicted_ys[:8], titles=["GT" for _ in range(8)] + ["pred" for _ in range(8)], rows=2)
   return all_ys, all_predicted_ys
 
 def get_centerpoint_model(weights, dataset_class, device):
@@ -69,17 +69,20 @@ def get_model(weights, dataset_class, device):
 
 def main(args):
   device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
-
-  if args.dataset == 'liver':
-    dataset_class = LiverDataset
-  elif args.dataset == 'polyp':
-    dataset_class = PolypDataset
+  dataset_class = train.get_dataset_class(args)
 
   # find centroids
-  centers_dataset = HeatmapDataset(dataset_class('test', polar=False))
+  centers_dataset = HeatmapDataset(args.dataset, 'test')
   centers_model = get_centerpoint_model(args.centerpoint_weights, dataset_class, device)
   centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
-  centers = [cv.minMaxLoc(cv.resize(center[-1], (128,128)))[-1] for center in centers_pred]
+  centers = [cv.minMaxLoc(cv.resize(center[-1], (dataset_class.width, dataset_class.height)))[-1] for center in centers_pred]
+
+  # test_dataset = dataset_class('test', polar=False)
+  # for i in range(8):
+  #   plt.imshow(centers_pred[i][-1])
+  #   #plt.imshow(test_dataset[i][1].detach().cpu().numpy().squeeze())
+  #   #plt.scatter(centers[i][0], centers[i][1])
+  #   plt.show()
 
   # run final predictions
   polar_dataset = dataset_class('test', polar=True, manual_centers=centers)

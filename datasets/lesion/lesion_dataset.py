@@ -14,6 +14,9 @@ import polar_transformations
 
 class LesionDataset(Dataset):
 
+  width = 512
+  height = 384
+
   in_channels = 3
   out_channels = 1
 
@@ -23,6 +26,7 @@ class LesionDataset(Dataset):
     self.manual_centers = manual_centers
 
     self.file_names = h.listdir(p.join(self.directory, 'label'))
+    self.file_names.sort()
     
   def __len__(self):
     #return 16 # overfit single batch

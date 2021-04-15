@@ -52,7 +52,7 @@ def main(args):
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
 
     dataset_class = get_dataset_class(args)
-    loader_train, loader_valid = data_loaders(args, dataset_class)
+    loader_train, loader_valid = data_loaders(args)
 
     model = get_model(args, dataset_class, device)
     model.to(device)
@@ -119,8 +119,8 @@ def main(args):
 def get_model(args, dataset_class, device):
     return StackedHourglass(nstack=args.nstacks, inp_dim=256, oup_dim=1, in_channels=dataset_class.in_channels)
 
-def data_loaders(args, dataset_class):
-    dataset_train, dataset_valid = datasets(args, dataset_class)
+def data_loaders(args):
+    dataset_train, dataset_valid = datasets(args)
 
     def worker_init(worker_id):
         np.random.seed(42 + worker_id)
@@ -143,19 +143,19 @@ def data_loaders(args, dataset_class):
 
     return loader_train, loader_valid
 
-def datasets(args, dataset_class):
+def datasets(args):
     train = HeatmapDataset(
-        wrapped_dataset=dataset_class(
-            directory='train',
-        ), 
+        dataset_name=args.dataset,
+        directory='train',
         transform=A.Compose([
             A.HorizontalFlip(p=0.5),
             A.ShiftScaleRotate(p=0.3),
             A.GridDistortion(p=0.3),
         ]))
-    valid = HeatmapDataset(dataset_class(
-      directory='valid',
-    ))
+    valid = HeatmapDataset(
+        dataset_name=args.dataset, 
+        directory='valid')
+
     return train, valid
 
 if __name__ == '__main__':

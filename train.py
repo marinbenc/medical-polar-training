@@ -193,7 +193,8 @@ def data_loaders(args, dataset_class):
 def datasets(args, dataset_class):
     train = dataset_class(
       directory='train',
-      polar=args.polar
+      polar=args.polar,
+      center_augmentation=args.polar
     )
     valid = dataset_class(
       directory='valid',

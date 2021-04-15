@@ -16,12 +16,17 @@ class PolypDataset(Dataset):
   in_channels = 3
   out_channels = 1
 
-  def __init__(self, directory, polar=True, manual_centers=None):
+  width = 384
+  height = 288
+
+  def __init__(self, directory, polar=True, manual_centers=None, center_augmentation=False):
     self.directory = p.join('datasets/polyp', directory)
     self.polar = polar
     self.manual_centers = manual_centers
+    self.center_augmentation = center_augmentation
 
     self.file_names = h.listdir(p.join(self.directory, 'label'))
+    self.file_names.sort()
     
   def __len__(self):
     #return 16 # overfit single batch
@@ -49,9 +54,17 @@ class PolypDataset(Dataset):
         center = self.manual_centers[idx]
       else:
         center = polar_transformations.centroid(label)
+
+      if self.center_augmentation and np.random.uniform() < 0.3:
+        center_max_shift = 0.05 * PolypDataset.height
+        center = np.array(center)
+        center = (
+          center[0] + np.random.uniform(-center_max_shift, center_max_shift),
+          center[1] + np.random.uniform(-center_max_shift, center_max_shift))
+      
       input = polar_transformations.to_polar(input, center)
       label = polar_transformations.to_polar(label, center)
-
+    
     # to PyTorch expected format
     input = input.transpose(2, 0, 1)
     label = np.expand_dims(label, axis=-1)
