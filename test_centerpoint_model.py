@@ -30,6 +30,7 @@ from test import get_predictions
 from helpers import show_images_row
 
 def get_centerpoint_predictions(model, dataset, device):
+  all_xs = []
   all_ys = []
   all_predicted_ys = []
 
@@ -38,15 +39,24 @@ def get_centerpoint_predictions(model, dataset, device):
       x = x.to(device)
       prediction = model(x.unsqueeze(0).detach())
 
+      all_xs.append(x.squeeze().detach().cpu().numpy().transpose(1, 2, 0) + 0.5)
+
       predicted_y = prediction
       predicted_y = predicted_y.squeeze().detach().cpu().numpy()
 
-      all_predicted_ys.append(predicted_y)
+      all_predicted_ys.append(predicted_y[-1])
 
       y = y.squeeze().detach().cpu().numpy()
       all_ys.append(y)
 
-  #show_images_row(all_ys[:8] + all_predicted_ys[:8], titles=["GT" for _ in range(8)] + ["pred" for _ in range(8)], rows=2)
+  # N = 4
+
+  # centers = [cv.minMaxLoc(cv.resize(center, all_xs[0].shape[:2]))[-1] for center in all_predicted_ys[:N]]
+  # xs = [cv.circle(x, center, 7, (0, 0, 255), -1) for (x, center) in zip(all_xs[:N], centers)]
+
+  # show_images_row(xs + all_ys[:N], titles=["Input" for _ in range(N)] + ["Heatmap" for _ in range(N)], rows=2)
+  # plt.show()
+  
   return all_ys, all_predicted_ys
 
 def get_centerpoint_model(weights, dataset_class, device):
@@ -75,7 +85,7 @@ def main(args):
   centers_dataset = HeatmapDataset(args.dataset, 'test')
   centers_model = get_centerpoint_model(args.centerpoint_weights, dataset_class, device)
   centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
-  centers = [cv.minMaxLoc(cv.resize(center[-1], (dataset_class.width, dataset_class.height)))[-1] for center in centers_pred]
+  centers = [cv.minMaxLoc(cv.resize(center, (dataset_class.width, dataset_class.height)))[-1] for center in centers_pred]
 
   # test_dataset = dataset_class('test', polar=False)
   # for i in range(8):
@@ -92,7 +102,7 @@ def main(args):
   dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
-  recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  recalls = np.array([recall(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
 
   # sorting = np.argsort(dscs)
   # sorted_final = np.array(all_ys)[sorting]

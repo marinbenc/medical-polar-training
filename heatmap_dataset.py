@@ -14,7 +14,6 @@ from albumentations.pytorch import ToTensorV2
 import helpers as h
 import polar_transformations
 
-# based on https://github.com/princeton-vl/pytorch_stacked_hourglass/blob/master/data/MPII/dp.py
 class HeatmapDataset(Dataset):
   def __init__(self, dataset_name, directory, transform=None):
     self.directory = p.join('datasets', dataset_name, 'heatmap', directory)

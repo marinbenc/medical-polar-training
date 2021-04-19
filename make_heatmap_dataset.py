@@ -13,8 +13,10 @@ import polar_transformations
 import helpers as h
 from train import dataset_choices, get_dataset_class
 
-# based on https://github.com/princeton-vl/pytorch_stacked_hourglass/blob/master/data/MPII/dp.py
 def generate_heatmap(output_res, center):
+  '''
+  based on https://github.com/princeton-vl/pytorch_stacked_hourglass/blob/master/data/MPII/dp.py
+  '''
   sigma = max(output_res) / 8
   size = 6 * sigma + 3
   x = np.arange(0, size, 1, float)

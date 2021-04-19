@@ -89,8 +89,8 @@ def main(args):
                 image = image.numpy()
                 image = image.transpose(1, 2, 0)
                 image += 0.5
-            plt.imshow(image.squeeze())
-            plt.show()
+            # plt.imshow(image.squeeze())
+            # plt.show()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def compute_metrics(engine):

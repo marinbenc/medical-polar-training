@@ -10,6 +10,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
+import cv2 as cv
 
 sys.path.append('../..')
 import helpers as h
@@ -53,6 +54,9 @@ for folder in subfolders:
 
       volume_save_path = p.join(folder, volume_name)
       mask_save_path = p.join(folder, mask_name)
+
+      volume_slice = cv.resize(volume_slice, dsize=(128, 128), interpolation=cv.INTER_CUBIC)
+      mask_slice = cv.resize(mask_slice, dsize=(128, 128), interpolation=cv.INTER_CUBIC)
 
       np.save(volume_save_path, volume_slice)
       np.save(mask_save_path, mask_slice)

@@ -63,7 +63,7 @@ def main(args):
   dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
-  recalls = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+  recalls = np.array([recall(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
 
   print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
 

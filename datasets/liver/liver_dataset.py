@@ -21,16 +21,21 @@ class LiverDataset(Dataset):
   in_channels = 1
   out_channels = 1
 
-  def __init__(self, directory, polar=True, manual_centers=None):
+  height = 128
+  width = 128
+
+  def __init__(self, directory, polar=True, manual_centers=None, center_augmentation=False):
     self.directory = p.join('datasets/liver', directory)
     self.polar = polar
     self.manual_centers = manual_centers
+    self.center_augmentation = center_augmentation
 
     all_files = h.listdir(self.directory)
     all_files = np.array(all_files)
     all_files.sort()
 
     self.data = np.dstack((all_files[len(all_files) // 2:], all_files[:len(all_files) // 2])).squeeze()
+    self.file_names = list(all_files[len(all_files) // 2:])
     
   def __len__(self):
     # return 16 # overfit single batch
@@ -41,9 +46,6 @@ class LiverDataset(Dataset):
     volume, mask = current_data[0], current_data[1]
     volume_slice = np.load(p.join(self.directory, volume))
     mask_slice = np.load(p.join(self.directory, mask))
-
-    volume_slice = cv.resize(volume_slice, dsize=(128, 128), interpolation=cv.INTER_CUBIC)
-    mask_slice = cv.resize(mask_slice, dsize=(128, 128), interpolation=cv.INTER_CUBIC)
 
     # remove non-liver labels
     mask_slice[mask_slice > 1] = 1
@@ -64,6 +66,14 @@ class LiverDataset(Dataset):
         center = self.manual_centers[idx]
       else:
         center = polar_transformations.centroid(mask_slice)
+
+      if self.center_augmentation and np.random.uniform() < 0.3:
+        center_max_shift = 0.05 * LiverDataset.height
+        center = np.array(center)
+        center = (
+          center[0] + np.random.uniform(-center_max_shift, center_max_shift),
+          center[1] + np.random.uniform(-center_max_shift, center_max_shift))
+
       volume_slice = polar_transformations.to_polar(volume_slice, center)
       mask_slice = polar_transformations.to_polar(mask_slice, center)
 
