@@ -14,7 +14,7 @@ NUM_SLICES_PER_SCAN = 841
 WINDOW_MAX = 200
 WINDOW_MIN = 0
 # obtained empirically
-GOLBAL_PIXEL_MEAN = 0.1
+GLOBAL_PIXEL_MEAN = 0.1
 
 class LiverDataset(Dataset):
 
@@ -58,7 +58,7 @@ class LiverDataset(Dataset):
     volume_slice = (volume_slice - WINDOW_MIN) / (WINDOW_MAX - WINDOW_MIN)
     # zero-centered globally because CT machines are calibrated to have even 
     # intensities across images
-    volume_slice -= GOLBAL_PIXEL_MEAN
+    volume_slice -= GLOBAL_PIXEL_MEAN
 
     # convert to polar
     if self.polar:

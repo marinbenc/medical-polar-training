@@ -45,9 +45,11 @@ sys.path.append('datasets/polyp')
 from polyp_dataset import PolypDataset
 sys.path.append('datasets/lesion')
 from lesion_dataset import LesionDataset
+sys.path.append('datasets/eat')
+from eat_dataset import EATDataset
 
 
-dataset_choices = ['liver', 'polyp', 'lesion']
+dataset_choices = ['liver', 'polyp', 'lesion', 'eat']
 model_choices = ['unet', 'resunetpp', 'deeplab']
 
 def main(args):
@@ -89,8 +91,8 @@ def main(args):
                 image = image.numpy()
                 image = image.transpose(1, 2, 0)
                 image += 0.5
-            # plt.imshow(image.squeeze())
-            # plt.show()
+            plt.imshow(image.squeeze())
+            plt.show()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def compute_metrics(engine):
@@ -143,7 +145,8 @@ def get_dataset_class(args):
     mapping = {
         'liver':    LiverDataset,
         'polyp':    PolypDataset,
-        'lesion':   LesionDataset
+        'lesion':   LesionDataset,
+        'eat':      EATDataset,
     }
     return mapping[args.dataset]
 

@@ -26,6 +26,9 @@ def iou(y_pred, y_true):
 
   intersection = np.logical_and(y_pred, y_true)
   union = np.logical_or(y_pred, y_true)
+  if not np.any(union):
+    return 0 if np.any(y_pred) else 1
+  
   return intersection.sum() / float(union.sum())
 
 def precision(y_pred, y_true):
