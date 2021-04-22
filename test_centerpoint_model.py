@@ -85,7 +85,10 @@ def main(args):
   centers_dataset = HeatmapDataset(args.dataset, 'test')
   centers_model = get_centerpoint_model(args.centerpoint_weights, dataset_class, device)
   centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
+  centers = [cv.minMaxLoc(center)[-1] for center in centers_pred]
+
   centers = [cv.minMaxLoc(cv.resize(center, (dataset_class.width, dataset_class.height)))[-1] for center in centers_pred]
+  print(centers)
 
   # test_dataset = dataset_class('test', polar=False)
   # for i in range(8):

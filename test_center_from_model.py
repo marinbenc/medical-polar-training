@@ -53,6 +53,7 @@ def main(args):
 
 
   print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
+  return dscs.mean(), ious.mean(), precisions.mean(), recalls.mean()
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(

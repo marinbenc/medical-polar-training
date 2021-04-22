@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pydicom
 from skimage.metrics import adapted_rand_error
+from medpy.metric.binary import precision as mp_precision
+from medpy.metric.binary import recall as mp_recall
 
 def _thresh(img):
   img[img > 0.5] = 1
@@ -43,9 +45,8 @@ def precision(y_pred, y_true):
 
   if y_pred.sum() <= 5:
     return 0.
-
-  _, precision, _ = adapted_rand_error(y_true, y_pred)
-  return precision
+  
+  return mp_precision(y_pred, y_true)
 
 def recall(y_pred, y_true):
   y_pred = _thresh(y_pred).astype(np.int)
@@ -59,9 +60,9 @@ def recall(y_pred, y_true):
 
   if y_pred.sum() <= 5:
     return 0.
-
-  _, _, recall = adapted_rand_error(y_true, y_pred)
-  return recall
+  
+  r = mp_recall(y_pred, y_true)
+  return r
 
 def listdir(path):
   """ List files but remove hidden files from list """

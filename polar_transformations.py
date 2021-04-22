@@ -52,10 +52,11 @@ def to_cart(input_img, center):
 if __name__ == "__main__":
   image = cv.imread('test_images/30.tif')
   plt.imshow(image)
-  plt.show()
 
   center = centroid(image)
-  
+  plt.scatter(center[0], center[1])
+  plt.show()
+
   polar = to_polar(image, center)
   plt.imshow(polar)
   plt.show()

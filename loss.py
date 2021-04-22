@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+import matplotlib.pyplot as plt
 from polar_transformations import centroid
 from torch.nn.functional import mse_loss
 
@@ -20,5 +21,4 @@ class DiceLoss(nn.Module):
           dscs[i] = (2. * intersection + self.smooth) / (
               y_pred_ch.sum() + y_true_ch.sum() + self.smooth
           )
-
         return 1. - torch.mean(dscs)
