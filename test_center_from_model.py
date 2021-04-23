@@ -23,7 +23,7 @@ from helpers import dsc, iou, precision, recall
 import polar_transformations
 from test import get_predictions
 
-def get_model(weights, dataset_class, device):
+def get_model(weights, dataset_class, device, args):
   model = train.get_model(args, dataset_class, device)
   model.to(device)
   model.load_state_dict(torch.load(weights))
@@ -37,13 +37,13 @@ def main(args):
     
   # find centroids
   non_polar_dataset = dataset_class('test', polar=False)
-  non_polar_model = get_model(args.non_polar_weights, dataset_class, device)
+  non_polar_model = get_model(args.non_polar_weights, dataset_class, device, args)
   _, non_polar_ys, non_polar_predictions = get_predictions(non_polar_model, non_polar_dataset, device)
   centers = [polar_transformations.centroid(prediction) for prediction in non_polar_predictions]
 
   # run final predictions
   polar_dataset = dataset_class('test', polar=True, manual_centers=centers)
-  polar_model = get_model(args.polar_weights, dataset_class, device)
+  polar_model = get_model(args.polar_weights, dataset_class, device, args)
   _, all_ys, all_predicted_ys = get_predictions(polar_model, polar_dataset, device)
 
   dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
@@ -51,7 +51,13 @@ def main(args):
   precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   recalls = np.array([recall(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
 
+  centers_gt = []
+  for i in range(len(centers)):
+    centers_gt.append(polar_transformations.centroid(non_polar_ys[i]))
 
+  mape = np.mean(((np.array(centers_gt) - np.array(centers)) ** 2))
+  print(f'mse: {mape}')
+  
   print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
   return dscs.mean(), ious.mean(), precisions.mean(), recalls.mean()
 

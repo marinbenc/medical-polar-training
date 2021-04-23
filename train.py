@@ -197,6 +197,7 @@ def datasets(args, dataset_class):
     train = dataset_class(
       directory='train',
       polar=args.polar,
+      percent=args.percent,
       center_augmentation=args.polar
     )
     valid = dataset_class(
@@ -254,5 +255,11 @@ if __name__ == '__main__':
       '--polar', 
       action='store_true',
       help='use polar coordinates')
+    parser.add_argument(
+        '--percent',
+        type=float,
+        default=None,
+        help='percent of the training dataset to use',
+    )
     args = parser.parse_args()
     main(args)

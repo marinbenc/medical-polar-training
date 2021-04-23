@@ -20,18 +20,21 @@ class LesionDataset(Dataset):
   in_channels = 3
   out_channels = 1
 
-  def __init__(self, directory, polar=True, manual_centers=None, center_augmentation=False):
+  def __init__(self, directory, polar=True, manual_centers=None, center_augmentation=False, percent=None):
     self.directory = p.join('datasets/lesion', directory)
     self.polar = polar
     self.manual_centers = manual_centers
     self.center_augmentation = center_augmentation
+    self.percent = percent
 
     self.file_names = h.listdir(p.join(self.directory, 'label'))
     self.file_names.sort()
     
   def __len__(self):
-    #return 16 # overfit single batch
-    return len(self.file_names)
+    length = len(self.file_names)
+    if self.percent is not None:
+      length = int(length * self.percent)
+    return length
 
   def __getitem__(self, idx):
     file_name = self.file_names[idx]

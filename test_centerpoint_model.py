@@ -39,8 +39,6 @@ def get_centerpoint_predictions(model, dataset, device):
       x = x.to(device)
       prediction = model(x.unsqueeze(0).detach())
 
-      all_xs.append(x.squeeze().detach().cpu().numpy().transpose(1, 2, 0) + 0.5)
-
       predicted_y = prediction
       predicted_y = predicted_y.squeeze().detach().cpu().numpy()
 
@@ -59,8 +57,7 @@ def get_centerpoint_predictions(model, dataset, device):
   
   return all_ys, all_predicted_ys
 
-def get_centerpoint_model(weights, dataset_class, device):
-  print(dataset_class)
+def get_centerpoint_model(weights, dataset_class, device, args):
   model = train_hourglass.get_model(args, dataset_class, device)
   model.to(device)
   model.load_state_dict(torch.load(weights))
@@ -68,7 +65,7 @@ def get_centerpoint_model(weights, dataset_class, device):
   model.train(False)
   return model
 
-def get_model(weights, dataset_class, device):
+def get_model(weights, dataset_class, device, args):
   args.loss = 'dice'
   model = train.get_model(args, dataset_class, device)
   model.to(device)
@@ -83,12 +80,9 @@ def main(args):
 
   # find centroids
   centers_dataset = HeatmapDataset(args.dataset, 'test')
-  centers_model = get_centerpoint_model(args.centerpoint_weights, dataset_class, device)
+  centers_model = get_centerpoint_model(args.centerpoint_weights, dataset_class, device, args)
   centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
-  centers = [cv.minMaxLoc(center)[-1] for center in centers_pred]
-
   centers = [cv.minMaxLoc(cv.resize(center, (dataset_class.width, dataset_class.height)))[-1] for center in centers_pred]
-  print(centers)
 
   # test_dataset = dataset_class('test', polar=False)
   # for i in range(8):
@@ -99,7 +93,7 @@ def main(args):
 
   # run final predictions
   polar_dataset = dataset_class('test', polar=True, manual_centers=centers)
-  polar_model = get_model(args.polar_weights, dataset_class, device)
+  polar_model = get_model(args.polar_weights, dataset_class, device, args)
   _, all_ys, all_predicted_ys = get_predictions(polar_model, polar_dataset, device)
 
   dscs = np.array([dsc(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
@@ -119,7 +113,17 @@ def main(args):
   #   plt.scatter(c[0], c[1])
   #   plt.show()
 
+  non_polar_dataset = dataset_class('test', polar=False)
+  _, non_polar_ys, _ = get_predictions(polar_model, non_polar_dataset, device)
+  centers_gt = []
+  for i in range(len(centers)):
+    centers_gt.append(polar_transformations.centroid(non_polar_ys[i]))
+
+  mape = np.mean(((np.array(centers_gt) - np.array(centers)) ** 2))
+  print(f'mse: {mape}')
+
   print(f'DSC: {dscs.mean():.4f} | IoU: {ious.mean():.4f} | prec: {precisions.mean():.4f} | rec: {recalls.mean():.4f}')
+  return dscs.mean(), ious.mean(), precisions.mean(), recalls.mean()
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
