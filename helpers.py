@@ -7,6 +7,7 @@ import pydicom
 from skimage.metrics import adapted_rand_error
 from medpy.metric.binary import precision as mp_precision
 from medpy.metric.binary import recall as mp_recall
+from medpy.metric.binary import dc, jc
 
 def _thresh(img):
   img[img > 0.5] = 1
@@ -17,6 +18,11 @@ def dsc(y_pred, y_true):
   y_pred = _thresh(y_pred)
   y_true = _thresh(y_true)
 
+  return dc(y_pred, y_true)
+
+  if not np.any(np.logical_or(y_pred, y_true)):
+    return 0 if np.any(y_pred) else 1
+
   if not np.any(y_true):
     return 1 - np.sum(y_pred) * 2.0 / np.sum(1 - y_true)
   else:
@@ -26,9 +32,12 @@ def iou(y_pred, y_true):
   y_pred = _thresh(y_pred)
   y_true = _thresh(y_true)
 
+  #return jc(y_pred, y_true)
+
   intersection = np.logical_and(y_pred, y_true)
   union = np.logical_or(y_pred, y_true)
   if not np.any(union):
+    print("a")
     return 0 if np.any(y_pred) else 1
   
   return intersection.sum() / float(union.sum())

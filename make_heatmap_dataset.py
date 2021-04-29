@@ -13,11 +13,10 @@ import polar_transformations
 import helpers as h
 from train import dataset_choices, get_dataset_class
 
-def generate_heatmap(output_res, center):
+def generate_heatmap(output_res, center, sigma):
   '''
   based on https://github.com/princeton-vl/pytorch_stacked_hourglass/blob/master/data/MPII/dp.py
   '''
-  sigma = max(output_res) / 8
   size = 6 * sigma + 3
   x = np.arange(0, size, 1, float)
   y = x[:, np.newaxis]
@@ -51,7 +50,7 @@ def process(input, label):
   
   center = polar_transformations.centroid(label)
 
-  label = generate_heatmap(label.shape[-2:], center)
+  label = generate_heatmap(label.shape[-2:], center, args.sigma)
   label = F.resize(label, 64, 64)
 
   return input, label
@@ -85,6 +84,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--dataset', type=str, choices=dataset_choices, default='liver', help='which dataset to use'
+    )
+    parser.add_argument(
+        '--sigma', type=int, default=8, help='the gaussian sigma'
     )
     args = parser.parse_args()
     main(args)

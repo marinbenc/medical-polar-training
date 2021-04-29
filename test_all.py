@@ -11,7 +11,7 @@ import helpers as h
 weights_folder = 'logs'
 
 models = train.model_choices
-datasets = train.dataset_choices[1:]
+datasets = train.dataset_choices
 
 class DisablePrint:
     def __enter__(self):
