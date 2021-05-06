@@ -23,7 +23,7 @@ import train_hourglass
 from heatmap_dataset import HeatmapDataset
 
 import train
-from helpers import dsc, iou, precision, recall
+from helpers import dsc, iou, precision, recall, show_images_row
 import polar_transformations
 from test import get_predictions
 
@@ -38,6 +38,7 @@ def get_centerpoint_predictions(model, dataset, device):
     for (x, y) in dataset:
       x = x.to(device)
       prediction = model(x.unsqueeze(0).detach())
+      all_xs.append(x.detach().cpu().numpy().transpose(1, 2, 0) + 0.5)
 
       predicted_y = prediction
       predicted_y = predicted_y.squeeze().detach().cpu().numpy()
@@ -55,7 +56,7 @@ def get_centerpoint_predictions(model, dataset, device):
   # show_images_row(xs + all_ys[:N], titles=["Input" for _ in range(N)] + ["Heatmap" for _ in range(N)], rows=2)
   # plt.show()
   
-  return all_ys, all_predicted_ys
+  return all_xs, all_ys, all_predicted_ys
 
 def get_centerpoint_model(weights, dataset_class, device, args):
   model = train_hourglass.get_model(args, dataset_class, device)
@@ -81,13 +82,15 @@ def main(args):
   # find centroids
   centers_dataset = HeatmapDataset(args.dataset, 'test')
   centers_model = get_centerpoint_model(args.centerpoint_weights, dataset_class, device, args)
-  centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
+  _, centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
   centers = [cv.minMaxLoc(cv.resize(center, (dataset_class.width, dataset_class.height)))[-1] for center in centers_pred]
 
-  # test_dataset = dataset_class('test', polar=False)
+  test_dataset = dataset_class('test', polar=False)
+  all_xs = [test_dataset[i][0].detach().cpu().numpy().transpose(1, 2, 0).squeeze() + 0.1 for i in range(len(test_dataset))]
+  print(all_xs[0].shape)
   # for i in range(8):
   #   plt.imshow(centers_pred[i][-1])
-  #   #plt.imshow(test_dataset[i][1].detach().cpu().numpy().squeeze())
+  #   #plt.imshow()
   #   #plt.scatter(centers[i][0], centers[i][1])
   #   plt.show()
 
@@ -100,6 +103,29 @@ def main(args):
   ious = np.array([iou(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   recalls = np.array([recall(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
+
+  all_ys = [polar_transformations.to_cart(y, center) for (y, center) in zip(all_ys, centers)]
+  all_predicted_ys = [polar_transformations.to_cart(y, center) for (y, center) in zip(all_predicted_ys, centers)]
+
+  if args.model == 'unet':
+    y_plots = [np.dstack((x, x, x)) for x in all_xs]
+    y_pred_plots = [np.dstack((x, x, x)) for x in all_xs]
+
+    for i in range(len(all_xs)):
+      y_plots[i] *= 0.5
+      y_plots[i][:, :, 1] += all_ys[i] * 0.5
+      y_pred_plots[i] *= 0.5
+      y_pred_plots[i][:, :, 1] += all_predicted_ys[i] * 0.5
+
+    show_images_row(
+      y_plots[1:400:100] + y_pred_plots[1:400:100], 
+      titles=['GT' for _ in range(4)]+['predicted' for _ in range(4)], 
+      rows=2,
+      figsize=(6.4, 3))
+
+    plt.tight_layout()
+    plt.savefig(f'plots/centerpoint_model_output_{args.dataset}.png', bbox_inches='tight')
+    plt.show()
 
   # sorting = np.argsort(dscs)
   # sorted_final = np.array(all_ys)[sorting]
