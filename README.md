@@ -1,6 +1,34 @@
-# Todo
+# Training on Polar Coordinates Improves Biomedical Image Segmentation
 
-## Datasets
+The code from the paper TODO PAPER LINK.
+
+### Requirements:
+
+ - PyTorch 1.7.1
+ - PyTorch ignite 0.4.3
+ - segmentation_models_pytorch 0.1.3
+ - Albumentations 0.5.2
+ - OpenCV 4.5.1.48
+ - Check `environment.yml` for more packages.
+
+### Citation
+
+TODO
+
+## Usage
+
+### Training
+
+ - `python train.py -h`: used to train the polar and cartesian network
+ - `python train_hourglass.py -h`: used to train the centerpoint predictor
+
+### Testing
+
+ - `python test.py -h`: test the polar and cartesian networks
+ - `python test_center_from_model.py -h`: test the polar network with polar origins from the cartesian network
+ - `python test_centerpoint_model.py -h`: test the polar network with polar origins from the centerpoint predictor
+
+## Preparing the datasets
 
 ### Liver
 

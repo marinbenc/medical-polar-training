@@ -7,7 +7,7 @@ import pydicom
 from skimage.metrics import adapted_rand_error
 from medpy.metric.binary import precision as mp_precision
 from medpy.metric.binary import recall as mp_recall
-from medpy.metric.binary import dc, jc
+from medpy.metric.binary import dc
 
 def _thresh(img):
   img[img > 0.5] = 1
@@ -20,24 +20,13 @@ def dsc(y_pred, y_true):
 
   return dc(y_pred, y_true)
 
-  if not np.any(np.logical_or(y_pred, y_true)):
-    return 0 if np.any(y_pred) else 1
-
-  if not np.any(y_true):
-    return 1 - np.sum(y_pred) * 2.0 / np.sum(1 - y_true)
-  else:
-    return np.sum(y_pred[y_true == 1]) * 2.0 / (np.sum(y_pred) + np.sum(y_true))
-
 def iou(y_pred, y_true):
   y_pred = _thresh(y_pred)
   y_true = _thresh(y_true)
 
-  #return jc(y_pred, y_true)
-
   intersection = np.logical_and(y_pred, y_true)
   union = np.logical_or(y_pred, y_true)
   if not np.any(union):
-    print("a")
     return 0 if np.any(y_pred) else 1
   
   return intersection.sum() / float(union.sum())
@@ -97,9 +86,6 @@ def show_images_row(imgs, titles=None, rows=1, figsize=(6.4, 4.8), **kwargs):
   fig = plt.figure(figsize=figsize)
   for n, (image, title) in enumerate(zip(imgs, titles)):
       ax = fig.add_subplot(rows, np.ceil(num_images / float(rows)), n + 1)
-      # ax.set_xlim(0, 128)
-      # ax.set_ylim(128, 256)
       plt.imshow(image, **kwargs)
       ax.set_title(title)
       plt.axis('off')
-  #plt.show()

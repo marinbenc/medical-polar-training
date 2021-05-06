@@ -47,14 +47,6 @@ def get_centerpoint_predictions(model, dataset, device):
 
       y = y.squeeze().detach().cpu().numpy()
       all_ys.append(y)
-
-  # N = 4
-
-  # centers = [cv.minMaxLoc(cv.resize(center, all_xs[0].shape[:2]))[-1] for center in all_predicted_ys[:N]]
-  # xs = [cv.circle(x, center, 7, (0, 0, 255), -1) for (x, center) in zip(all_xs[:N], centers)]
-
-  # show_images_row(xs + all_ys[:N], titles=["Input" for _ in range(N)] + ["Heatmap" for _ in range(N)], rows=2)
-  # plt.show()
   
   return all_xs, all_ys, all_predicted_ys
 
@@ -88,11 +80,6 @@ def main(args):
   test_dataset = dataset_class('test', polar=False)
   all_xs = [test_dataset[i][0].detach().cpu().numpy().transpose(1, 2, 0).squeeze() + 0.1 for i in range(len(test_dataset))]
   print(all_xs[0].shape)
-  # for i in range(8):
-  #   plt.imshow(centers_pred[i][-1])
-  #   #plt.imshow()
-  #   #plt.scatter(centers[i][0], centers[i][1])
-  #   plt.show()
 
   # run final predictions
   polar_dataset = dataset_class('test', polar=True, manual_centers=centers)
@@ -106,38 +93,6 @@ def main(args):
 
   all_ys = [polar_transformations.to_cart(y, center) for (y, center) in zip(all_ys, centers)]
   all_predicted_ys = [polar_transformations.to_cart(y, center) for (y, center) in zip(all_predicted_ys, centers)]
-
-  if args.model == 'unet':
-    y_plots = [np.dstack((x, x, x)) for x in all_xs]
-    y_pred_plots = [np.dstack((x, x, x)) for x in all_xs]
-
-    for i in range(len(all_xs)):
-      y_plots[i] *= 0.5
-      y_plots[i][:, :, 1] += all_ys[i] * 0.5
-      y_pred_plots[i] *= 0.5
-      y_pred_plots[i][:, :, 1] += all_predicted_ys[i] * 0.5
-
-    show_images_row(
-      y_plots[1:400:100] + y_pred_plots[1:400:100], 
-      titles=['GT' for _ in range(4)]+['predicted' for _ in range(4)], 
-      rows=2,
-      figsize=(6.4, 3))
-
-    plt.tight_layout()
-    plt.savefig(f'plots/centerpoint_model_output_{args.dataset}.png', bbox_inches='tight')
-    plt.show()
-
-  # sorting = np.argsort(dscs)
-  # sorted_final = np.array(all_ys)[sorting]
-  # sorted_ys = np.array(centers_gt)[sorting]
-  # sorted_non_polar_predictions = np.array(centers_pred)[sorting]
-  # sorted_centers = np.array(centers)[sorting]
-
-  # for i in range(len(sorting)):
-  #   plt.imshow(sorted_final[i])
-  #   c = sorted_centers[i]
-  #   plt.scatter(c[0], c[1])
-  #   plt.show()
 
   non_polar_dataset = dataset_class('test', polar=False)
   _, non_polar_ys, _ = get_predictions(polar_model, non_polar_dataset, device)

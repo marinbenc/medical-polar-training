@@ -10,8 +10,8 @@ import helpers as h
 
 weights_folder = 'logs'
 
-models = train.model_choices[:1]
-datasets = train.dataset_choices[:1]
+models = train.model_choices
+datasets = train.dataset_choices
 
 class DisablePrint:
     def __enter__(self):
@@ -46,37 +46,37 @@ for dataset in datasets:
   
   for model in models:
 
-    # print(f' - model: {model}')
-    # args = {
-    #   'weights': get_best_model(f'logs/{dataset}_{model}_non_polar/'),
-    #   'model': model,
-    #   'dataset': dataset,
-    #   'polar': False,
-    # }
-    # with DisablePrint():
-    #   output = test.main(Args(args))
-    # print_output('Cartesian', output)
+    print(f' - model: {model}')
+    args = {
+      'weights': get_best_model(f'logs/{dataset}_{model}_non_polar/'),
+      'model': model,
+      'dataset': dataset,
+      'polar': False,
+    }
+    with DisablePrint():
+      output = test.main(Args(args))
+    print_output('Cartesian', output)
 
-    # args = {
-    #   'weights': get_best_model(f'logs/{dataset}_{model}_polar_aug/'),
-    #   'model': model,
-    #   'dataset': dataset,
-    #   'polar': True,
-    # }
-    # with DisablePrint():
-    #   output = test.main(Args(args))
-    # print_output('GT centers', output)
+    args = {
+      'weights': get_best_model(f'logs/{dataset}_{model}_polar_aug/'),
+      'model': model,
+      'dataset': dataset,
+      'polar': True,
+    }
+    with DisablePrint():
+      output = test.main(Args(args))
+    print_output('GT centers', output)
 
-    # args = {
-    #   'non_polar_weights': get_best_model(f'logs/{dataset}_{model}_non_polar/'),
-    #   'polar_weights': get_best_model(f'logs/{dataset}_{model}_polar_aug/'),
-    #   'model': model,
-    #   'dataset': dataset,
-    # }
+    args = {
+      'non_polar_weights': get_best_model(f'logs/{dataset}_{model}_non_polar/'),
+      'polar_weights': get_best_model(f'logs/{dataset}_{model}_polar_aug/'),
+      'model': model,
+      'dataset': dataset,
+    }
 
-    # with DisablePrint():
-    #   output = test_center_from_model.main(Args(args))
-    # print_output('Cart. centers', output)
+    with DisablePrint():
+      output = test_center_from_model.main(Args(args))
+    print_output('Cart. centers', output)
 
     args = {
       'centerpoint_weights': get_best_model(f'logs/{dataset}_stacked_hourglass_sigma_8/'),

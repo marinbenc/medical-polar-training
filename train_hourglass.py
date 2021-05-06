@@ -30,7 +30,6 @@ from ignite.contrib.handlers.tensorboard_logger import (
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss, ConfusionMatrix, DiceCoefficient, MeanSquaredError
 from ignite.contrib.metrics.regression import MedianAbsolutePercentageError
-
 import albumentations as A
 
 import helpers as h
