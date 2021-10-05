@@ -1,6 +1,24 @@
 # Training on Polar Coordinates Improves Biomedical Image Segmentation
 
-The code from the paper TODO PAPER LINK.
+The code from the paper M. Benčević, I. Galić, M. Habijan and D. Babin, "Training on Polar Image Transformations Improves Biomedical Image Segmentation," in IEEE Access, vol. 9, pp. 133365-133375, 2021, doi: 10.1109/ACCESS.2021.3116265.
+
+Paper link (open access):
+https://doi.org/10.1109/ACCESS.2021.3116265
+
+BibTex:
+
+```
+@ARTICLE{9551998,
+  author={Benčević, Marin and Galić, Irena and Habijan, Marija and Babin, Danilo},
+  journal={IEEE Access}, 
+  title={Training on Polar Image Transformations Improves Biomedical Image Segmentation}, 
+  year={2021},
+  volume={9},
+  number={},
+  pages={133365-133375},
+  doi={10.1109/ACCESS.2021.3116265}}
+```
+
 
 ### Requirements:
 
