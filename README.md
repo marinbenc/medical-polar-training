@@ -29,10 +29,6 @@ BibTex:
  - OpenCV 4.5.1.48
  - Check `environment.yml` for more packages.
 
-### Citation
-
-TODO
-
 ## Usage
 
 ### Training
