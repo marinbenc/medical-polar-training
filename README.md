@@ -1,5 +1,9 @@
 # Training on Polar Coordinates Improves Biomedical Image Segmentation
 
+> **Note:** Updated version for multiple objects is included in the [multiple-objects](https://github.com/marinbenc/medical-polar-training/tree/multiple-objects) branch.
+
+--
+
 The code from the paper M. Benčević, I. Galić, M. Habijan and D. Babin, "Training on Polar Image Transformations Improves Biomedical Image Segmentation," in IEEE Access, vol. 9, pp. 133365-133375, 2021, doi: 10.1109/ACCESS.2021.3116265.
 
 Paper link (open access):
