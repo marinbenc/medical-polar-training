@@ -13,6 +13,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import cv2 as cv
+from scipy import ndimage as ndi
+import matplotlib.pyplot as plt
+from skimage.feature import peak_local_max
+from skimage import data, img_as_float
 
 sys.path.append('datasets/liver')
 from liver_dataset import LiverDataset
@@ -46,6 +50,11 @@ def get_centerpoint_predictions(model, dataset, device):
       all_predicted_ys.append(predicted_y[-1])
 
       y = y.squeeze().detach().cpu().numpy()
+      # fig, axs = plt.subplots(nrows=1, ncols=2)
+      # axs = axs.flatten()
+      # axs[0].imshow(all_xs[-1])
+      # axs[1].imshow(predicted_y[-1])
+      # plt.show()
       all_ys.append(y)
   
   return all_xs, all_ys, all_predicted_ys
@@ -67,6 +76,10 @@ def get_model(weights, dataset_class, device, args):
   model.train(False)
   return model
 
+def get_max_coords(img):
+  i, j = np.unravel_index(img.argmax(), img.shape)
+  return [i, j]
+
 def main(args):
   device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
   dataset_class = train.get_dataset_class(args)
@@ -75,7 +88,8 @@ def main(args):
   centers_dataset = HeatmapDataset(args.dataset, 'test')
   centers_model = get_centerpoint_model(args.centerpoint_weights, dataset_class, device, args)
   _, centers_gt, centers_pred = get_centerpoint_predictions(centers_model, centers_dataset, device)
-  centers = [cv.minMaxLoc(cv.resize(center, (dataset_class.width, dataset_class.height)))[-1] for center in centers_pred]
+
+  centers = [get_max_coords(cv.resize(center, (dataset_class.width, dataset_class.height))) for center in centers_pred]
 
   test_dataset = dataset_class('test', polar=False)
   all_xs = [test_dataset[i][0].detach().cpu().numpy().transpose(1, 2, 0).squeeze() + 0.1 for i in range(len(test_dataset))]
@@ -91,14 +105,14 @@ def main(args):
   precisions = np.array([precision(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
   recalls = np.array([recall(all_predicted_ys[i], all_ys[i]) for i in range(len(all_ys))])
 
-  all_ys = [polar_transformations.to_cart(y, center) for (y, center) in zip(all_ys, centers)]
-  all_predicted_ys = [polar_transformations.to_cart(y, center) for (y, center) in zip(all_predicted_ys, centers)]
+  #all_ys = [polar_transformations.to_cart(y, center) for (y, center) in zip(all_ys, centers)]
+  #all_predicted_ys = [polar_transformations.to_cart(y, center) for (y, center) in zip(all_predicted_ys, centers)]
 
   non_polar_dataset = dataset_class('test', polar=False)
   _, non_polar_ys, _ = get_predictions(polar_model, non_polar_dataset, device)
   centers_gt = []
   for i in range(len(centers)):
-    centers_gt.append(polar_transformations.centroid(non_polar_ys[i]))
+    centers_gt.append(polar_transformations.centroids(non_polar_ys[i])[0])
 
   mape = np.mean(((np.array(centers_gt) - np.array(centers)) ** 2))
   print(f'mse: {mape}')

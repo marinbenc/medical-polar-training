@@ -80,12 +80,8 @@ def show_images_row(imgs, titles=None, rows=1, figsize=(6.4, 4.8), **kwargs):
   assert ((titles is None) or (len(imgs) == len(titles)))
   num_images = len(imgs)
 
-  if titles is None:
-      titles = ['Image (%d)' % i for i in range(1, num_images + 1)]
-
   fig = plt.figure(figsize=figsize)
-  for n, (image, title) in enumerate(zip(imgs, titles)):
-      ax = fig.add_subplot(rows, np.ceil(num_images / float(rows)), n + 1)
+  for n, image in enumerate(imgs):
+      ax = fig.add_subplot(rows, int(np.ceil(num_images / float(rows))), n + 1)
       plt.imshow(image, **kwargs)
-      ax.set_title(title)
       plt.axis('off')

@@ -31,6 +31,8 @@ from ignite.engine import Events, create_supervised_trainer, create_supervised_e
 from ignite.metrics import Accuracy, Loss, ConfusionMatrix, DiceCoefficient, MeanSquaredError
 from ignite.contrib.metrics.regression import MedianAbsolutePercentageError
 
+from sklearn.model_selection import KFold
+
 import helpers as h
 from loss import DiceLoss
 from helpers import dsc
@@ -47,18 +49,19 @@ sys.path.append('datasets/lesion')
 from lesion_dataset import LesionDataset
 sys.path.append('datasets/eat')
 from eat_dataset import EATDataset
+sys.path.append('datasets/aa')
+from aa_dataset import AortaDataset
 
 
-dataset_choices = ['liver', 'polyp', 'lesion', 'eat']
+
+dataset_choices = ['liver', 'polyp', 'lesion', 'eat', 'aa']
 model_choices = ['unet', 'resunetpp', 'deeplab']
 
-def main(args):
-    makedirs(args)
-    snapshotargs(args)
+def train_fold(args, fold, train_patients, valid_patients):
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
 
     dataset_class = get_dataset_class(args)
-    loader_train, loader_valid = data_loaders(args, dataset_class)
+    loader_train, loader_valid = data_loaders(args, dataset_class, train_patients, valid_patients)
 
     model = get_model(args, dataset_class, device)
     model.to(device)
@@ -82,17 +85,16 @@ def main(args):
 
     best_dsc = 0
 
-    @trainer.on(Events.GET_BATCH_COMPLETED(once=1))
-    def plot_batch(engine):
-        x, y = engine.state.batch
-        images = [x[0], y[0]]
-        for image in images:
-            if image.shape[0] > 1:
-                image = image.numpy()
-                image = image.transpose(1, 2, 0)
-                image += 0.5
-            plt.imshow(image.squeeze())
-            plt.show()
+    # @trainer.on(Events.GET_BATCH_COMPLETED(once=1))
+    # def plot_batch(engine):
+    #     x, y = engine.state.batch
+    #     images = [x[1], y[1]]
+    #     for image in images:
+    #         if args.depth:
+    #             plt.imshow(image[1])
+    #         else:
+    #             plt.imshow(image.squeeze())
+    #         plt.show()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def compute_metrics(engine):
@@ -103,7 +105,7 @@ def main(args):
         if curr_dsc > best_dsc:
             best_dsc = curr_dsc
 
-    log_dir = f'logs/{datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")}'
+    log_dir = f'logs/{args.experiment_name }/fold_{fold}'
     tb_logger = TensorboardLogger(log_dir=log_dir)
 
     tb_logger.attach_output_handler(
@@ -141,12 +143,30 @@ def main(args):
     trainer.run(loader_train, max_epochs=args.epochs)
     tb_logger.close()
 
+def get_splits(args, dataset_class):
+    kfolds = KFold(n_splits=args.folds, shuffle=False)
+    patients = dataset_class.get_patient_names(args.hospital_id)
+    patients = np.array(patients)
+    return patients, kfolds.split(patients)
+
+def main(args):
+    makedirs(args)
+    snapshotargs(args)
+
+    dataset_class = get_dataset_class(args)
+    patients, splits = get_splits(args, dataset_class)
+    for fold, (train_idxs, valid_idxs) in enumerate(splits):
+        train_patients = list(patients[train_idxs])
+        valid_patients = list(patients[valid_idxs])
+        train_fold(args, fold, train_patients, valid_patients)
+
 def get_dataset_class(args):
     mapping = {
         'liver':    LiverDataset,
         'polyp':    PolypDataset,
         'lesion':   LesionDataset,
         'eat':      EATDataset,
+        'aa':      AortaDataset,
     }
     return mapping[args.dataset]
 
@@ -169,8 +189,8 @@ def get_model(args, dataset_class, device):
             activation='sigmoid')
     return model
 
-def data_loaders(args, dataset_class):
-    dataset_train, dataset_valid = datasets(args, dataset_class)
+def data_loaders(args, dataset_class, train_patients, valid_patients):
+    dataset_train, dataset_valid = datasets(args, dataset_class, train_patients, valid_patients)
 
     def worker_init(worker_id):
         np.random.seed(42 + worker_id)
@@ -193,16 +213,22 @@ def data_loaders(args, dataset_class):
 
     return loader_train, loader_valid
 
-def datasets(args, dataset_class):
+def datasets(args, dataset_class, train_patients, valid_patients):
     train = dataset_class(
-      directory='train',
+      mode='train',
       polar=args.polar,
       percent=args.percent,
-      center_augmentation=args.polar
+      center_augmentation=args.polar,
+      depth=args.depth,
+      hospital_id=args.hospital_id,
+      patient_names=train_patients
     )
     valid = dataset_class(
-      directory='valid',
-      polar=args.polar
+      mode='valid',
+      polar=args.polar,
+      depth=args.depth,
+      hospital_id=args.hospital_id,
+      patient_names=valid_patients
     )
     return train, valid
 
@@ -223,6 +249,12 @@ if __name__ == '__main__':
         type=int,
         default=16,
         help='input batch size for training (default: 16)',
+    )
+    parser.add_argument(
+        '--folds',
+        type=int,
+        default=4,
+        help='k in k-folds cross-validation',
     )
     parser.add_argument(
         '--epochs',
@@ -256,10 +288,20 @@ if __name__ == '__main__':
       action='store_true',
       help='use polar coordinates')
     parser.add_argument(
+      '--depth', 
+      action='store_true',
+      help='use 3 consequtive slices')
+    parser.add_argument(
         '--percent',
         type=float,
         default=None,
         help='percent of the training dataset to use',
+    )
+    parser.add_argument(
+        '--hospital-id', type=str, choices=['D', 'K', 'R'], default='D', help='which dataset subset (center) to use'
+    )
+    parser.add_argument(
+        '--experiment-name', type=str, default=datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     )
     args = parser.parse_args()
     main(args)

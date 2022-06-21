@@ -1,5 +1,32 @@
 # Training on Polar Coordinates Improves Biomedical Image Segmentation
 
+## Multiple object segmentation (tested on aorta segmentation)
+
+This branch contains a version of the project for segmenting multiple objects on an image, as described in the following preprint:
+
+TODO
+
+In addition, this branch also uses k-folds cross validation. Testing is done using `test_kfolds.py` and `test_kfolds_model_centers.py`. The trained models from the paper are available under Releases, and the test results are stored in `results_test_kfolds_<model>.npy` in the root folder.
+
+The aorta dataset used:
+
+> Radl, L., Jin, Y., Pepe, A., Li, J., Gsaxner, C., Zhao, F., & Egger, J. (2022). AVT: Multicenter aortic vessel tree CTA dataset collection with ground truth segmentation masks. In Data in Brief (Vol. 40, p. 107801). Elsevier BV. https://doi.org/10.1016/j.dib.2022.107801
+
+The dataset needs to added to the project in the form of the following folder structure (note that we have flattened the original directory structure):
+
+```
+datasets/aa/data/avt/D1.nrrd
+datasets/aa/data/avt/D1.seg.nrrd
+datasets/aa/data/avt/D2.nrrd
+...
+```
+
+After adding the data, use `split_aa_dataset.py` to prepare the needed files for training.
+
+The rest of the readme is the same as for the main branch.
+
+---
+
 The code from the paper M. Benčević, I. Galić, M. Habijan and D. Babin, "Training on Polar Image Transformations Improves Biomedical Image Segmentation," in IEEE Access, vol. 9, pp. 133365-133375, 2021, doi: 10.1109/ACCESS.2021.3116265.
 
 Paper link (open access):
@@ -18,7 +45,6 @@ BibTex:
   pages={133365-133375},
   doi={10.1109/ACCESS.2021.3116265}}
 ```
-
 
 ### Requirements:
 

@@ -1,8 +1,35 @@
 import os
 
+
+from scipy.ndimage.measurements import label as skimage_label
+from skimage.measure import regionprops
+
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
+
+def centroids(img):
+  img[img < 1] = 0
+  label, count = skimage_label(img)
+  props = regionprops(label)
+  centroids = np.array([(p.centroid[1], p.centroid[0]) for p in props])
+  return centroids
+
+def get_connected_component(img, center):
+  labels, count = skimage_label(img, structure=np.ones((3, 3)))
+  if count == 0:
+    return img
+  center = np.round(center).astype(int)
+  center_label = labels[center[1], center[0]]
+  cc = labels == center_label
+  return cc.astype(np.uint8)
+
+def lcc(img):
+  labels, count = skimage_label(img)
+  if count == 0:
+    return img
+  lcc = labels == np.argmax(np.bincount(labels.flat)[1:])+1
+  return lcc.astype(np.uint8)
 
 def centroid(img, lcc=False):
   if lcc:
@@ -35,18 +62,18 @@ def centroid(img, lcc=False):
   return (cX, cY)
 
 def to_polar(input_img, center):
-  input_img = input_img.astype(np.float32)
-  value = np.sqrt(((input_img.shape[0]/2.0)**2.0)+((input_img.shape[1]/2.0)**2.0))
-  polar_image = cv.linearPolar(input_img, center, value, cv.WARP_FILL_OUTLIERS)
+  img = input_img.astype(np.float32)
+  value = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+  polar_image = cv.linearPolar(img, tuple(center), value, cv.WARP_FILL_OUTLIERS)
+  img = None
+  del img
   polar_image = cv.rotate(polar_image, cv.ROTATE_90_COUNTERCLOCKWISE)
   return polar_image
 
 def to_cart(input_img, center):
-  input_img = input_img.astype(np.float32)
-  input_img = cv.rotate(input_img, cv.ROTATE_90_CLOCKWISE)
+  input_img = np.rot90(input_img, k=3)
   value = np.sqrt(((input_img.shape[1]/2.0)**2.0)+((input_img.shape[0]/2.0)**2.0))
-  polar_image = cv.linearPolar(input_img, center, value, cv.WARP_FILL_OUTLIERS + cv.WARP_INVERSE_MAP)
-  polar_image = polar_image.astype(np.uint8)
+  polar_image = cv.linearPolar(input_img, tuple(center), value, cv.WARP_FILL_OUTLIERS + cv.WARP_INVERSE_MAP)
   return polar_image
 
 if __name__ == "__main__":

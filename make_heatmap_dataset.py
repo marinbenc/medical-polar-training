@@ -8,12 +8,14 @@ import os.path as p
 import numpy as np
 import albumentations.augmentations.functional as F
 import cv2 as cv
+import skimage
+import matplotlib.pyplot as plt
 
 import polar_transformations
 import helpers as h
 from train import dataset_choices, get_dataset_class
 
-def generate_heatmap(output_res, center, sigma):
+def generate_heatmap(output_res, centers, sigma):
   '''
   based on https://github.com/princeton-vl/pytorch_stacked_hourglass/blob/master/data/MPII/dp.py
   '''
@@ -26,31 +28,42 @@ def generate_heatmap(output_res, center, sigma):
   g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
 
   hms = np.zeros(output_res, dtype=np.float32)
-  
-  x, y = int(center[0]), int(center[1])
 
-  ul = int(x - 3*sigma - 1), int(y - 3*sigma - 1)
-  br = int(x + 3*sigma + 2), int(y + 3*sigma + 2)
+  for center in centers:
+    x, y = int(center[0]), int(center[1])
 
-  c, d = max(0, -ul[0]), min(br[0], output_res[1]) - ul[0]
-  a, b = max(0, -ul[1]), min(br[1], output_res[1]) - ul[1]
+    ul = int(x - 3*sigma - 1), int(y - 3*sigma - 1)
+    br = int(x + 3*sigma + 2), int(y + 3*sigma + 2)
 
-  cc, dd = max(0, ul[0]), min(br[0], output_res[1])
-  aa, bb = max(0, ul[1]), min(br[1], output_res[1])
+    c, d = max(0, -ul[0]), min(br[0], output_res[1]) - ul[0]
+    a, b = max(0, -ul[1]), min(br[1], output_res[1]) - ul[1]
 
-  hms[aa:bb,cc:dd] = np.maximum(hms[aa:bb,cc:dd], g[a:b,c:d])
+    cc, dd = max(0, ul[0]), min(br[0], output_res[1])
+    aa, bb = max(0, ul[1]), min(br[1], output_res[1])
 
+    hms[aa:bb,cc:dd] = np.maximum(hms[aa:bb,cc:dd], g[a:b,c:d])
+
+  # if len(centers) > 1:
+  #   plt.imshow(hms)
+  #   plt.show()
   return hms
+
+def get_lcc(img):
+    labels = skimage.measure.label(img)
+    img_lcc = labels != np.argmax(np.bincount(labels.flat))
+    img_lcc = img_lcc.astype(img.dtype)
+    # plt.imshow(img_lcc)
+    # plt.show()
+    return img_lcc
 
 def process(input, label):
   input = input.detach().numpy().transpose(1, 2, 0)
   input = F.resize(input, 256, 256)
   label = label.detach().numpy().squeeze()
   label = F.resize(label, 256, 256)
-  
-  center = polar_transformations.centroid(label)
+  centers = polar_transformations.centroids(label)
 
-  label = generate_heatmap(label.shape[-2:], center, args.sigma)
+  label = generate_heatmap(label.shape[-2:], centers, args.sigma)
   label = F.resize(label, 64, 64)
 
   return input, label
