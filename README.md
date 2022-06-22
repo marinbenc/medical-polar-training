@@ -4,7 +4,7 @@
 
 This branch contains a version of the project for segmenting multiple objects on an image, as described in the following preprint:
 
-TODO
+> Benčević, M., Habijan, M., Galić, I., & Babin, D. (2022). [Using the Polar Transform for Efficient Deep Learning-Based Aorta Segmentation in CTA Images](https://arxiv.org/abs/2206.10294); https://doi.org/10.48550/ARXIV.2206.10294 (arXiv preprint of accepted conference paper to ELMAR-22, Zadar, Croatia)
 
 In addition, this branch also uses k-folds cross validation. Testing is done using `test_kfolds.py` and `test_kfolds_model_centers.py`. The trained models from the paper are available under Releases, and the test results are stored in `results_test_kfolds_<model>.npy` in the root folder.
 
